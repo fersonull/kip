@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,6 +7,8 @@ import { Icon, IconButton, Pebble, Title } from '@/components/ui';
 import { C, F, tintFor } from '@/constants/tokens';
 import type { Cred } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
+
+import Autofill from '../../modules/kip-autofill';
 
 const ROW_H = 58;
 const HEAD_H = 36;
@@ -40,6 +42,10 @@ export default function VaultScreen() {
   const [q, setQ] = useState('');
   const list = useRef<FlatList<Line>>(null);
   const searchInput = useRef<TextInput>(null);
+
+  // Re-checked on focus: the user may have just switched it on in Android settings.
+  const [autofillOn, setAutofillOn] = useState(Autofill.isEnabled());
+  useFocusEffect(useCallback(() => setAutofillOn(Autofill.isEnabled()), []));
 
   // The search bar floats (absolute), so KeyboardAvoidingView padding can't move it. Lift it by the
   // keyboard height instead; RN reports that height already minus the nav bar this screen sits above.
@@ -102,9 +108,14 @@ export default function VaultScreen() {
             <Text style={{ marginTop: 8, fontFamily: F.body, fontSize: 14, lineHeight: 21, color: C.muted, textAlign: 'center' }}>
               Give your phone a little shake to add a login. Kip will also offer to save when you sign in somewhere.
             </Text>
-            <Pressable onPress={() => router.push('/settings/autofill')} style={{ marginTop: 18, height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1.5, borderColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Icon name="auto_awesome" size={20} />
-              <Text style={{ fontFamily: F.medium, fontSize: 14, color: C.ink }}>Turn on autofill</Text>
+            <Pressable
+              onPress={() => router.push('/settings/autofill')}
+              style={{
+                marginTop: 18, height: 48, paddingHorizontal: 20, borderRadius: 24, flexDirection: 'row', alignItems: 'center', gap: 8,
+                ...(autofillOn ? { backgroundColor: C.okBg } : { borderWidth: 1.5, borderColor: C.ink }),
+              }}>
+              <Icon name={autofillOn ? 'check_circle' : 'auto_awesome'} size={20} color={autofillOn ? C.okInk : C.ink} />
+              <Text style={{ fontFamily: F.medium, fontSize: 14, color: autofillOn ? C.okInk : C.ink }}>{autofillOn ? 'Autofill is on' : 'Turn on autofill'}</Text>
             </Pressable>
           </View>
         ) : (
