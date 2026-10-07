@@ -48,7 +48,8 @@ export default function PendingScreen() {
               <View style={{ flex: 1 }} />
               {pill('Edit', C.sand, false, () => router.push({ pathname: '/add', params: { pendingId: String(p.id) } }))}
               {pill('Keep', C.ember, true, async () => {
-                await v.save({ title: p.title, username: p.username, password: p.password, url: p.source, notes: '', custom: [] });
+                // Older entries have no url; their source is the best there is.
+                await v.save({ title: p.title, username: p.username, password: p.password, url: p.url || p.source, notes: '', custom: [] });
                 await v.dropPending(p.id);
                 toast.flash('Kept. It’s in your pocket.');
               })}

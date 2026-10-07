@@ -1,5 +1,6 @@
 package expo.modules.kipautofill
 
+import android.content.Intent
 import android.view.autofill.AutofillManager
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
@@ -23,6 +24,18 @@ class KipAutofillModule : Module() {
 
     AsyncFunction("clearFillCache") {
       KipStore.clearFillCache(ctx)
+    }
+
+    /** Installed apps with a launcher icon, as { label, pkg }, sorted by name. For linking a login to an app. */
+    AsyncFunction("listApps") {
+      val pm = ctx.packageManager
+      @Suppress("DEPRECATION")
+      pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
+        .map { it.activityInfo.packageName to it.loadLabel(pm).toString() }
+        .filter { it.first != ctx.packageName }
+        .distinctBy { it.first }
+        .sortedBy { it.second.lowercase() }
+        .map { mapOf("label" to it.second, "pkg" to it.first) }
     }
 
     /** Logins Android asked Kip to save, as JSON strings. Empties the queue. */

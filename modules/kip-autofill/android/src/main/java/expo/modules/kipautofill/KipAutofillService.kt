@@ -63,6 +63,8 @@ class KipAutofillService : AutofillService() {
         .put("username", username)
         .put("password", password)
         .put("source", site ?: "$title app")
+        // What fill matching needs: the site, or the app's package name.
+        .put("url", site ?: form.pkg)
         .put("createdAt", System.currentTimeMillis())
         .toString())
     }.onFailure { return callback.onFailure("Kip couldn't save this login.") }

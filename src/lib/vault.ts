@@ -16,7 +16,8 @@ export type Cred = {
   updatedAt: number;
 };
 export type CredInput = Pick<Cred, 'title' | 'username' | 'password' | 'url' | 'notes' | 'custom'>;
-export type Pending = { id: number; title: string; username: string; password: string; source: string; createdAt: number };
+/** url: the site or app package the login came from (what fill matches on). source: how to describe it. */
+export type Pending = { id: number; title: string; username: string; password: string; url: string; source: string; createdAt: number };
 
 let db: SQLite.SQLiteDatabase | null = null;
 const d = () => {
@@ -40,6 +41,8 @@ export async function openVault(dataKeyB64: string) {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL, username TEXT NOT NULL DEFAULT '', password TEXT NOT NULL DEFAULT '',
         source TEXT NOT NULL DEFAULT '', created_at INTEGER NOT NULL);`);
+    // v2: pending logins keep the site or app package. Throws once the column exists, which is fine.
+    await next.execAsync("ALTER TABLE pending ADD COLUMN url TEXT NOT NULL DEFAULT ''").catch(() => {});
   } catch (e) {
     await next.closeAsync();
     throw e;
@@ -95,6 +98,6 @@ export async function saveCred(c: CredInput, id?: number) {
 export const deleteCred = (id: number) => d().runAsync('DELETE FROM credentials WHERE id=?', id);
 export const setFav = (id: number, fav: boolean) => d().runAsync('UPDATE credentials SET fav=? WHERE id=?', fav ? 1 : 0, id);
 export const addPending = (p: Omit<Pending, 'id'>) =>
-  d().runAsync('INSERT INTO pending (title, username, password, source, created_at) VALUES (?,?,?,?,?)',
-    p.title, p.username, p.password, p.source, p.createdAt);
+  d().runAsync('INSERT INTO pending (title, username, password, url, source, created_at) VALUES (?,?,?,?,?,?)',
+    p.title, p.username, p.password, p.url, p.source, p.createdAt);
 export const deletePending = (id: number) => d().runAsync('DELETE FROM pending WHERE id=?', id);

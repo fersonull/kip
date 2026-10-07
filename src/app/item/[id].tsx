@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from '@/components/toast';
 import { Button, IconButton, Pebble, Title } from '@/components/ui';
 import { C, F, tintFor } from '@/constants/tokens';
+import { useAppNames } from '@/lib/apps';
 import { useVault } from '@/lib/vault-context';
 
 type FieldRow = { key: string; label: string; value: string; secret?: boolean; mono?: boolean };
@@ -13,16 +14,20 @@ type FieldRow = { key: string; label: string; value: string; secret?: boolean; m
 export default function Detail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const v = useVault();
+  const appNames = useAppNames();
   const toast = useToast();
   const [shown, setShown] = useState<Record<string, boolean>>({});
   const c = v.items.find((i) => i.id === Number(id));
   if (!c) return null;
+  // A url that is an installed app's package shows as that app's name.
+  const appName = appNames?.get(c.url.trim());
 
   const fields: FieldRow[] = [
     ...(c.username ? [{ key: 'u', label: 'Username', value: c.username }] : []),
-    { key: 'p', label: 'Password', value: c.password, secret: true, mono: true },
-    ...(c.url ? [{ key: 'url', label: 'Website', value: c.url }] : []),
-    ...c.custom.map((f, i) => ({ key: 'c' + i, label: f.k || 'Field', value: f.v, secret: true, mono: true })),
+    // Only fields with a value: a hidden empty one would still draw dots and look saved.
+    ...(c.password ? [{ key: 'p', label: 'Password', value: c.password, secret: true, mono: true }] : []),
+    ...(c.url ? [appName ? { key: 'url', label: 'App', value: appName } : { key: 'url', label: 'Website', value: c.url }] : []),
+    ...c.custom.flatMap((f, i) => (f.v ? [{ key: 'c' + i, label: f.k || 'Field', value: f.v, secret: true, mono: true }] : [])),
     ...(c.notes ? [{ key: 'n', label: 'Notes', value: c.notes }] : []),
   ];
 
@@ -54,7 +59,7 @@ export default function Detail() {
         </Pebble>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Title size={26}>{c.title}</Title>
-          {!!c.url && <Text style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{c.url}</Text>}
+          {!!c.url && <Text style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{appName ? `${appName} app` : c.url}</Text>}
         </View>
       </View>
 

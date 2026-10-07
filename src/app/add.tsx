@@ -5,11 +5,13 @@ import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } f
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AppPicker } from '@/components/app-picker';
 import { GeneratorSheet } from '@/components/generator-sheet';
 import { useToast } from '@/components/toast';
-import { Button, Field, Icon, IconButton, Title } from '@/components/ui';
+import { Button, Field, Icon, IconButton, Pebble, s, Title } from '@/components/ui';
 import { useSheet } from '@/components/use-sheet';
-import { C, F } from '@/constants/tokens';
+import { C, F, tintFor } from '@/constants/tokens';
+import { useAppNames } from '@/lib/apps';
 import type { CredInput } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
 
@@ -39,12 +41,15 @@ export default function Add() {
     editing
       ? { title: editing.title, username: editing.username, password: editing.password, url: editing.url, notes: editing.notes, custom: editing.custom }
       : pend
-        ? { ...BLANK, title: pend.title, username: pend.username, password: pend.password, url: pend.source }
+        ? { ...BLANK, title: pend.title, username: pend.username, password: pend.password, url: pend.url || pend.source }
         : BLANK,
   );
   const [err, setErr] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [gen, setGen] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const appNames = useAppNames();
+  const appName = appNames?.get(f.url.trim());
   const [busy, setBusy] = useState(false);
 
   const set = (k: keyof CredInput) => (t: string) => {
@@ -114,7 +119,36 @@ export default function Add() {
               </>
             }
           />
-          <Field label="Website or app" value={f.url} onChangeText={set('url')} placeholder="emberbank.app" keyboardType="url" />
+          {appName ? (
+            // Linked to an installed app: show its name, not the package.
+            <View>
+              <Text style={s.label}>Website or app</Text>
+              <View style={[s.field, { borderColor: C.line, gap: 12 }]}>
+                <Pebble w={32} h={28} color={tintFor(appName)}>
+                  <Text style={{ fontFamily: F.displayBold, fontSize: 13, color: C.ink }}>{appName[0]?.toUpperCase()}</Text>
+                </Pebble>
+                <View style={{ flex: 1, minWidth: 0, paddingVertical: 8 }}>
+                  <Text numberOfLines={1} style={{ fontFamily: F.medium, fontSize: 16, color: C.ink }}>{appName}</Text>
+                  <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 12, color: C.faint }}>Android app</Text>
+                </View>
+                <IconButton name="close" label={`Unlink ${appName}`} color={C.muted} size={20} style={{ width: 44, height: 44 }} onPress={() => setF((x) => ({ ...x, url: '' }))} />
+              </View>
+            </View>
+          ) : (
+            <Field
+              label="Website or app"
+              value={f.url}
+              onChangeText={set('url')}
+              placeholder="emberbank.app"
+              keyboardType="url"
+              trailing={
+                <Pressable onPress={() => setPicking(true)} style={{ height: 40, paddingHorizontal: 12, borderRadius: 20, backgroundColor: C.sand, flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 2 }}>
+                  <Icon name="apps" size={18} />
+                  <Text style={{ fontFamily: F.bold, fontSize: 13, color: C.ink }}>Pick app</Text>
+                </Pressable>
+              }
+            />
+          )}
           <Field label="Notes" value={f.notes} onChangeText={set('notes')} placeholder="Anything worth remembering" multiline autoCapitalize="sentences" autoCorrect />
 
           {f.custom.map((c, i) => (
@@ -140,6 +174,17 @@ export default function Add() {
       </KeyboardAvoidingView>
       </Animated.View>
 
+      {picking && (
+        <AppPicker
+          onClose={() => setPicking(false)}
+          onPick={(app) => {
+            setPicking(false);
+            // A blank name gets the app's, so picking the app is often all it takes.
+            setF((x) => ({ ...x, url: app.pkg, title: x.title.trim() ? x.title : app.label }));
+            setErr('');
+          }}
+        />
+      )}
       {gen && (
         <GeneratorSheet
           onClose={() => setGen(false)}

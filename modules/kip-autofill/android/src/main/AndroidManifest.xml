@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Lets the app picker see apps with a launcher icon (Android 11+ hides other apps by default). -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+  </queries>
+
   <application>
     <service
       android:name="expo.modules.kipautofill.KipAutofillService"

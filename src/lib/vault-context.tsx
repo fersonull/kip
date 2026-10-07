@@ -62,7 +62,10 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   const refresh = async () => {
     // Logins Android asked Kip to save while it was locked.
     const caught = await Autofill.drainQueue().catch(() => [] as string[]);
-    for (const json of caught) await vault.addPending(JSON.parse(json) as QueuedLogin);
+    for (const json of caught) {
+      const q = JSON.parse(json) as QueuedLogin;
+      await vault.addPending({ ...q, url: q.url ?? '' });
+    }
 
     const creds = await vault.listCreds();
     setItems(creds);
