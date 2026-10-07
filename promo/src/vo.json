@@ -1,0 +1,23 @@
+{
+  "problem": {
+    "vo-1a": "Your passwords are everywhere.",
+    "vo-1b": "Reused, forgotten, sitting on someone else's server."
+  },
+  "reveal": {
+    "vo-2": "Meet Kip."
+  },
+  "solution": {
+    "vo-3a": "A password manager that never leaves your phone.",
+    "vo-3b": "Encrypted.",
+    "vo-3c": "Offline.",
+    "vo-3d": "No account. No cloud."
+  },
+  "how": {
+    "vo-4a": "Log in anywhere, and Kip offers to save it.",
+    "vo-4b": "Next time, it fills it in for you.",
+    "vo-4c": "Need one fast? Just shake."
+  },
+  "cta": {
+    "vo-5": "Kip. Your passwords, kept close."
+  }
+}
