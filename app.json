@@ -51,7 +51,8 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "./plugins/with-release-no-internet"
     ],
     "experiments": {
       "typedRoutes": true,
