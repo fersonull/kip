@@ -70,7 +70,12 @@ class AutofillAuthActivity : FragmentActivity() {
       val c = all.getJSONObject(i)
       if (!Form.matches(c.optString("url"), form)) continue
       val user = c.optString("username")
-      val dataset = Dataset.Builder(KipAutofillService.row(this, c.optString("title"), user.ifEmpty { "••••••••" }))
+      val title = c.optString("title")
+      val sub = user.ifEmpty { "••••••••" }
+      val dataset = Dataset.Builder(KipAutofillService.row(this, title, sub))
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        Inline.chip(this, intent, n, title, sub)?.let { dataset.setInlinePresentation(it) }
+      }
       @Suppress("DEPRECATION")
       form.user?.let { dataset.setValue(it, AutofillValue.forText(user)) }
       @Suppress("DEPRECATION")
@@ -79,9 +84,16 @@ class AutofillAuthActivity : FragmentActivity() {
       if (++n == 20) break
     }
     // ponytail: no match = nothing to fill. A "pick any login" fallback would go here.
-    if (n == 0) return cancel("No Kip login for $where yet.")
+    if (n == 0) {
+      Toast.makeText(applicationContext, "No Kip login for $where yet.", Toast.LENGTH_LONG).show()
+      return finishWith(KipAutofillService.nothingToFill(form))
+    }
     KipAutofillService.saveInfo(form)?.let { response.setSaveInfo(it) }
-    setResult(Activity.RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response.build()))
+    finishWith(response.build())
+  }
+
+  private fun finishWith(response: FillResponse) {
+    setResult(Activity.RESULT_OK, Intent().putExtra(AutofillManager.EXTRA_AUTHENTICATION_RESULT, response))
     finish()
   }
 

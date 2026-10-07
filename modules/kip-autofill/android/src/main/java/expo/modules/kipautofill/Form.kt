@@ -16,6 +16,8 @@ data class Form(
   val domain: String?,
   /** App package that owns the screen (the browser, for web pages). */
   val pkg: String,
+  /** Sign-up or change-password form: nothing to fill, only something to save. */
+  val signup: Boolean,
 ) {
   val ids get() = listOfNotNull(user, pass).toTypedArray()
 
@@ -25,14 +27,20 @@ data class Form(
       var pass: ViewNode? = null
       var lastText: ViewNode? = null
       var domain: String? = null
+      var passwords = 0
+      var newPassword = false
 
       fun visit(n: ViewNode) {
         n.webDomain?.takeIf { it.isNotBlank() }?.let { domain = it }
         if (n.autofillId != null && n.autofillType == View.AUTOFILL_TYPE_TEXT) {
           when {
-            isPassword(n) -> if (pass == null) {
-              pass = n
-              if (user == null) user = lastText // The text field just before the password is the username.
+            isPassword(n) -> {
+              passwords++
+              newPassword = newPassword || isNewPassword(n)
+              if (pass == null) {
+                pass = n
+                if (user == null) user = lastText // The text field just before the password is the username.
+              }
             }
             isUsername(n) -> if (user == null) user = n
             pass == null -> lastText = n
@@ -49,6 +57,8 @@ data class Form(
         passValue = pass?.autofillValue?.takeIf { it.isText }?.textValue?.toString(),
         domain = domain,
         pkg = structure.activityComponent.packageName,
+        // A "new password" hint, or password + confirm-password fields.
+        signup = newPassword || passwords >= 2,
       )
     }
 
@@ -64,6 +74,9 @@ data class Form(
         (v == InputType.TYPE_TEXT_VARIATION_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD || v == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD)) ||
         (cls == InputType.TYPE_CLASS_NUMBER && v == InputType.TYPE_NUMBER_VARIATION_PASSWORD)
     }
+
+    private fun isNewPassword(n: ViewNode) =
+      hints(n).any { it == "newpassword" || it == "new-password" } || html(n)["autocomplete"]?.contains("new-password") == true
 
     private fun isUsername(n: ViewNode): Boolean {
       if (hints(n).any { it == "username" || "email" in it }) return true

@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.os.CancellationSignal
 import android.service.autofill.AutofillService
 import android.service.autofill.FillCallback
@@ -23,17 +24,26 @@ class KipAutofillService : AutofillService() {
   override fun onFillRequest(request: FillRequest, cancel: CancellationSignal, callback: FillCallback) {
     val form = Form.parse(request.fillContexts.last().structure)
     if (form.pkg == packageName || form.ids.isEmpty()) return callback.onSuccess(null)
+    // Sign-ups have nothing to fill. Skip "Unlock Kip" and just offer to save on submit.
+    if (form.signup) return callback.onSuccess(nothingToFill(form))
 
+    val inline = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+    val intent = Intent(this, AutofillAuthActivity::class.java)
+    if (inline) Inline.pass(request, intent)
     val auth = PendingIntent.getActivity(
       this,
       requestCode++,
-      Intent(this, AutofillAuthActivity::class.java),
+      intent,
       // Android adds the screen structure to this intent, so it must stay mutable.
       PendingIntent.FLAG_CANCEL_CURRENT or (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0),
     ).intentSender
 
+    val dropdown = row(this, "Unlock Kip", "to fill this login")
+    // On keyboards that support it, a chip in the suggestion strip instead of a dropdown over the field.
+    val chip = if (inline) Inline.chip(this, request, "Unlock Kip", "to fill") else null
     val response = FillResponse.Builder()
-      .setAuthentication(form.ids, auth, row(this, "Unlock Kip", "to fill this login"))
+    if (chip != null && inline) response.setAuthentication(form.ids, auth, dropdown, chip)
+    else response.setAuthentication(form.ids, auth, dropdown)
     saveInfo(form)?.let { response.setSaveInfo(it) }
     callback.onSuccess(response.build())
   }
@@ -71,8 +81,18 @@ class KipAutofillService : AutofillService() {
       val type = SaveInfo.SAVE_DATA_TYPE_PASSWORD or (if (form.user != null) SaveInfo.SAVE_DATA_TYPE_USERNAME else 0)
       return SaveInfo.Builder(type, arrayOf(pass))
         .apply { form.user?.let { setOptionalIds(arrayOf(it)) } }
+        // Web forms often submit by swapping views out instead of a real commit.
+        .setFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
         .build()
     }
+
+    /**
+     * A real answer with no logins in it. Cancelling instead makes Android ask again on every focus.
+     * Android requires a response to carry something, so it carries the save offer (or an empty client state).
+     */
+    fun nothingToFill(form: Form): FillResponse = FillResponse.Builder().apply {
+      saveInfo(form)?.let { setSaveInfo(it) } ?: setClientState(Bundle())
+    }.build()
 
     fun row(ctx: Context, title: String, sub: String) = RemoteViews(ctx.packageName, R.layout.kip_autofill_item).apply {
       setTextViewText(R.id.kip_autofill_title, title)
