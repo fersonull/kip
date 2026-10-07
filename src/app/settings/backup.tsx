@@ -6,7 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useToast } from '@/components/toast';
 import { Body, Button, Field, Icon, IconButton, Title } from '@/components/ui';
 import { C, F } from '@/constants/tokens';
-import { makeBackup, pickBackup, readBackup } from '@/lib/backup';
+import { makeBackup, pickFile, readBackup } from '@/lib/backup';
+import { fromPasswordCsv } from '@/lib/import-csv';
 import { useVault } from '@/lib/vault-context';
 
 type Picked = { name: string; size: number; text: string };
@@ -21,6 +22,9 @@ export default function Backup() {
   const [err, setErr] = useState('');
   const [restoring, setRestoring] = useState(false);
   const [restored, setRestored] = useState<number | null>(null);
+  const [imported, setImported] = useState<{ added: number; skipped: number } | null>(null);
+  const [importErr, setImportErr] = useState('');
+  const [importing, setImporting] = useState(false);
 
   const backupSub = v.settings.lastBackup ? `Last backup: ${v.settings.lastBackup}` : 'No backup yet. Worth doing today.';
 
@@ -39,12 +43,29 @@ export default function Backup() {
   };
 
   const choose = async () => {
-    const f = await v.away(pickBackup).catch(() => null);
+    const f = await v.away(pickFile).catch(() => null);
     if (!f) return;
     setPicked(f);
     setPw('');
     setErr('');
     setRestored(null);
+  };
+
+  const importCsv = async () => {
+    setImportErr('');
+    const f = await v.away(pickFile).catch(() => null);
+    if (!f) return;
+    const list = fromPasswordCsv(f.text);
+    if (!list) return setImportErr('That doesn’t look like a passwords export. Pick the CSV file Google made.');
+    setImporting(true);
+    try {
+      const added = await v.importItems(list);
+      setImported({ added, skipped: list.length - added });
+    } catch {
+      setImportErr('Couldn’t import that file. Try again.');
+    } finally {
+      setImporting(false);
+    }
   };
 
   const restore = async () => {
@@ -125,6 +146,34 @@ export default function Backup() {
                 </Text>{' '}
                 Duplicates were skipped.
               </Done>
+            )}
+          </View>
+
+          <View style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.card, gap: 12 }}>
+            <Head icon="move_to_inbox" title="Import from Google" sub="Bring over passwords saved in Google Password Manager" />
+            {imported ? (
+              <>
+                <Done>
+                  <Text style={{ fontFamily: F.bold }}>
+                    {imported.added} {imported.added === 1 ? 'login' : 'logins'} imported.
+                  </Text>
+                  {imported.skipped ? ` ${imported.skipped} ${imported.skipped === 1 ? 'was' : 'were'} already here.` : ''}
+                </Done>
+                <View style={{ padding: 14, borderRadius: 16, backgroundColor: C.dangerBg, flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+                  <Icon name="warning" size={22} color={C.danger} />
+                  <Text style={{ flex: 1, fontFamily: F.body, fontSize: 13, lineHeight: 18, color: C.ink }}>
+                    <Text style={{ fontFamily: F.bold }}>Now delete the CSV file</Text> from Downloads (and anywhere you copied it). It holds your passwords as plain text.
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontFamily: F.body, fontSize: 13, lineHeight: 19, color: C.muted }}>
+                  In Chrome, open <Text style={{ fontFamily: F.bold }}>Password Manager › Settings › Export passwords</Text>, or use passwords.google.com. Then choose the downloaded CSV file here.
+                </Text>
+                {!!importErr && <Text style={{ fontFamily: F.body, fontSize: 13, color: C.danger }}>{importErr}</Text>}
+                <Button title={importing ? 'Importing…' : 'Choose CSV file'} kind="sand" height={52} onPress={importCsv} disabled={importing} />
+              </>
             )}
           </View>
         </ScrollView>

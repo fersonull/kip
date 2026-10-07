@@ -20,11 +20,20 @@ export async function makeBackup(dataKey: string, items: CredInput[]) {
   return name;
 }
 
-export async function pickBackup(): Promise<{ name: string; size: number; text: string } | null> {
+/** Picks a file and returns its text. Kip's temporary copy is deleted right after reading. */
+export async function pickFile(): Promise<{ name: string; size: number; text: string } | null> {
   const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
   if (res.canceled) return null;
   const a = res.assets[0];
-  return { name: a.name, size: a.size ?? 0, text: await new File(a.uri).text() };
+  const copy = new File(a.uri);
+  try {
+    return { name: a.name, size: a.size ?? 0, text: await copy.text() };
+  } finally {
+    // Matters for imports: an exported CSV holds passwords as plain text.
+    try {
+      copy.delete();
+    } catch {}
+  }
 }
 
 /** Returns the logins, or null when the password doesn't open this file. Throws on a corrupt file. */
