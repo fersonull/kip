@@ -4,4 +4,10 @@
   <string name="kip_shortcut_add_long">Add a login</string>
   <string name="kip_shortcut_search">Search</string>
   <string name="kip_shortcut_search_long">Search logins</string>
+  <string name="kip_shake_channel_on">Shake to add is on</string>
+  <string name="kip_shake_channel_shook">Shake to add</string>
+  <string name="kip_shake_on">Shake to add is on</string>
+  <string name="kip_shake_on_sub">Shake your phone, or tap here, to add a login</string>
+  <string name="kip_shake_shook">Add a login</string>
+  <string name="kip_shake_shook_sub">You shook. Tap to open Kip.</string>
 </resources>

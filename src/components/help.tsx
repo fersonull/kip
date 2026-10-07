@@ -187,7 +187,7 @@ export const TOPICS: Topic[] = [
       'Or tap the **+ pebble** next to search.',
       'Only the name is required. Tap **Make one** for a strong password.',
     ],
-    note: 'Too jumpy, or not enough? Change it in Settings › **Shake to add**.',
+    note: 'Too jumpy, or not enough? Change it in Settings › **Shake to add**. Turn on **Even when Kip is closed** to shake from any app.',
   },
   {
     id: 'tile',

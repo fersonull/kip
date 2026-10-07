@@ -38,7 +38,10 @@ type Vault = {
 const Ctx = createContext<Vault>(null!);
 export const useVault = () => useContext(Ctx);
 
-const sameCred = (a: CredInput, b: CredInput) => a.title === b.title && a.username === b.username && a.password === b.password;
+/** Closed-app shake runs natively; keep its level in step with settings. */
+const syncShake = (s: keys.Settings) => Autofill.setBackgroundShake(s.shakeClosed && s.shake !== 'Off' ? s.shake : null);
+
+const sameCred =(a: CredInput, b: CredInput) => a.title === b.title && a.username === b.username && a.password === b.password;
 
 export function VaultProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
@@ -55,8 +58,13 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     (async () => {
       settingsRef.current = await keys.loadSettings();
       setSettingsState(settingsRef.current);
+      syncShake(settingsRef.current);
       setStatus((await keys.hasVault()) ? 'locked' : 'new');
     })();
+    // Closing Kip unmounts this but can leave the process running (shake service): don't leave the vault open.
+    return () => {
+      vault.closeVault().catch(() => {});
+    };
   }, []);
 
   const refresh = async () => {
@@ -114,6 +122,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     settingsRef.current = next;
     setSettingsState(next);
     await keys.saveSettings(next);
+    if ('shake' in patch || 'shakeClosed' in patch) syncShake(next);
   };
 
   const v: Vault = {

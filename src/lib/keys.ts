@@ -87,12 +87,14 @@ export async function unlockWithBio(): Promise<string | null> {
 export type Settings = {
   autoLock: 0 | 60 | 300;
   shake: 'Off' | 'Gentle' | 'Firm';
+  /** Shake works while Kip is closed too (Android foreground service). */
+  shakeClosed: boolean;
   clipSecs: 15 | 30 | 60;
   bio: boolean;
   lastBackup: string | null;
 };
 
-const DEFAULTS: Settings = { autoLock: 60, shake: 'Gentle', clipSecs: 30, bio: false, lastBackup: null };
+const DEFAULTS: Settings = { autoLock: 60, shake: 'Gentle', shakeClosed: false, clipSecs: 30, bio: false, lastBackup: null };
 
 export async function loadSettings(): Promise<Settings> {
   const raw = await SecureStore.getItemAsync(SETTINGS);

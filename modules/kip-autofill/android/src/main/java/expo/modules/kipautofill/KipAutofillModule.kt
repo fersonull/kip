@@ -1,6 +1,7 @@
 package expo.modules.kipautofill
 
 import android.content.Intent
+import android.provider.Settings
 import android.view.autofill.AutofillManager
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
@@ -42,5 +43,18 @@ class KipAutofillModule : Module() {
     AsyncFunction("drainQueue") {
       KipStore.drainQueue(ctx)
     }
+
+    /** Closed-app shake: "Gentle" or "Firm" runs the service, null stops it. */
+    Function("setBackgroundShake") { level: String? ->
+      KipShakeService.setLevel(ctx, level)
+    }
+
+    /** True when Kip may open over other apps, so a closed-app shake skips the notification tap. */
+    Function("canOpenOverApps") {
+      Settings.canDrawOverlays(ctx)
+    }
+
+    OnActivityEntersForeground { KipShakeService.appVisible = true }
+    OnActivityEntersBackground { KipShakeService.appVisible = false }
   }
 }

@@ -6,6 +6,9 @@ type KipAutofill = {
   clearFillCache(): Promise<void>;
   drainQueue(): Promise<string[]>;
   listApps(): Promise<{ label: string; pkg: string }[]>;
+  /** Closed-app shake service: a level turns it on, null turns it off. */
+  setBackgroundShake(level: 'Gentle' | 'Firm' | null): void;
+  canOpenOverApps(): boolean;
 };
 
 export type QueuedLogin = {

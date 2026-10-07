@@ -24,7 +24,7 @@ Kip is an Android app that stores credentials **locally and encrypted**, with **
 
 | Idea                                 | Reality                                                                                             | Decision                                                                                                                                                     |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Shake to add while the app is closed | Android doesn't allow background accelerometer access without a battery-draining foreground service | Shake works while the app is open. For closed-app use: Quick Settings tile, widget, long-press icon shortcut. An optional foreground service can come later. |
+| Shake to add while the app is closed | Android doesn't allow background accelerometer access without a battery-draining foreground service | Shake works while the app is open. For closed-app use: Quick Settings tile, widget, long-press icon shortcut. Opt-in closed-app shake service added later. |
 | Auto-prompt to save on login         | Supported via the Android Autofill framework (`AutofillService.onSaveRequest`)                      | Core feature. Some apps and browsers block or limit autofill, so manual add stays first-class.                                                               |
 | PWA                                  | Cannot register an autofill service or Quick Settings tile                                          | Native Android app via Expo development build                                                                                                                |
 | Expo Go                              | Cannot load custom native modules                                                                   | Not usable. Use a development build (`expo prebuild` / EAS).                                                                                                 |
@@ -97,7 +97,7 @@ Kip is an Android app that stores credentials **locally and encrypted**, with **
 | **Quick Settings tile**       | `TileService` opens Add after unlock. Closed-app equivalent of shake.                                                 |
 | **Long-press icon shortcuts** | "Add credential" and "Search"                                                                                         |
 | **Home screen widget**        | One-tap Add and Search (optional)                                                                                     |
-| **Closed-app shake**          | Optional, opt-in foreground service with a persistent notification. Off by default because of battery cost. Deferred. |
+| **Closed-app shake**          | Opt-in foreground service, listens only while unlocked. Opens Add directly with "Display over other apps", else a heads-up notification. |
 
 ---
 
@@ -168,7 +168,7 @@ Kip registers as an `AutofillService`. The user selects it once under Settings â
 | Framework                | Expo with development build |
 | Min SDK                  | 26                          |
 | Backup                   | Encrypted export in MVP     |
-| Closed-app shake service | Skipped initially           |
+| Closed-app shake service | Opt-in, off by default      |
 
 ## 12. Risks
 
@@ -180,5 +180,4 @@ Kip registers as an `AutofillService`. The user selects it once under Settings â
 ## 13. Future
 
 - Passkey support via Android 14+ Credential Manager
-- Closed-app shake foreground service (opt-in)
 - iOS: credential provider extension for filling, plus Shortcuts and Action Button for fast add

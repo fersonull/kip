@@ -27,6 +27,9 @@ const d = () => {
 
 /** Opens the SQLCipher DB. Throws if the key is wrong. */
 export async function openVault(dataKeyB64: string) {
+  // The JS runtime outlives the activity while the shake service keeps the process up, so a handle from the
+  // last session can still be open. expo-sqlite would hand that cached connection back, and it fails on use.
+  await closeVault().catch(() => {});
   const next = await SQLite.openDatabaseAsync('kip.db');
   try {
     // Hex comes from our own key bytes, so interpolation is safe here.

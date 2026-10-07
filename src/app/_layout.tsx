@@ -3,7 +3,6 @@ import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-googl
 import { JetBrainsMono_400Regular, JetBrainsMono_600SemiBold } from '@expo-google-fonts/jetbrains-mono';
 import { useFonts } from 'expo-font';
 import { router, Stack, usePathname, type Href } from 'expo-router';
-import { usePreventScreenCapture } from 'expo-screen-capture';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useSyncExternalStore } from 'react';
@@ -18,7 +17,6 @@ import { useVault, VaultProvider } from '@/lib/vault-context';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  usePreventScreenCapture(); // FLAG_SECURE: no screenshots, blank in recents.
   const [fonts] = useFonts({
     BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold,
     DMSans_400Regular, DMSans_500Medium, DMSans_700Bold,
