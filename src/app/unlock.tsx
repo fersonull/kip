@@ -56,7 +56,7 @@ export default function Unlock() {
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1, paddingHorizontal: 28, paddingTop: 56, paddingBottom: 24 }}>
         <Title size={44}>{'Hey, it’s\nyou.'}</Title>
         <Body style={{ marginTop: 12 }}>
-          {v.afterUnlock ? 'Unlock to finish adding your login.' : 'Your logins napped while you were gone. Wake them with a tap.'}
+          {v.afterUnlock?.startsWith('/add') ? 'Unlock to finish adding your login.' : 'Your logins napped while you were gone. Wake them with a tap.'}
         </Body>
         <View style={{ flex: 1 }} />
 

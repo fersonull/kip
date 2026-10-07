@@ -94,4 +94,7 @@ export async function saveCred(c: CredInput, id?: number) {
 
 export const deleteCred = (id: number) => d().runAsync('DELETE FROM credentials WHERE id=?', id);
 export const setFav = (id: number, fav: boolean) => d().runAsync('UPDATE credentials SET fav=? WHERE id=?', fav ? 1 : 0, id);
+export const addPending = (p: Omit<Pending, 'id'>) =>
+  d().runAsync('INSERT INTO pending (title, username, password, source, created_at) VALUES (?,?,?,?,?)',
+    p.title, p.username, p.password, p.source, p.createdAt);
 export const deletePending = (id: number) => d().runAsync('DELETE FROM pending WHERE id=?', id);

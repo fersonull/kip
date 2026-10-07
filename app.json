@@ -52,7 +52,8 @@
         }
       ],
       "expo-sharing",
-      "./plugins/with-release-no-internet"
+      "./plugins/with-release-no-internet",
+      "./plugins/with-kip-shortcuts"
     ],
     "experiments": {
       "typedRoutes": true,

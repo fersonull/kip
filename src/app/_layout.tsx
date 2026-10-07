@@ -6,10 +6,11 @@ import { router, Stack, usePathname, type Href } from 'expo-router';
 import { usePreventScreenCapture } from 'expo-screen-capture';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { ToastProvider } from '@/components/toast';
 import { C } from '@/constants/tokens';
+import { peek, subscribe, take } from '@/lib/deep-link';
 import { useShake } from '@/lib/use-shake';
 import { useVault, VaultProvider } from '@/lib/vault-context';
 
@@ -49,13 +50,23 @@ function Nav({ fontsReady }: { fontsReady: boolean }) {
     else if (path !== '/add') router.push(ADD_FROM_SHAKE);
   });
 
-  // Finish what a shake (or later, the tile) started once the vault opens.
+  // Tile and shortcut links, parked by +native-intent. They go through the same "after unlock" slot as shake.
+  const parked = useSyncExternalStore(subscribe, peek);
+  const { status, onboarding, setAfterUnlock } = v;
+  useEffect(() => {
+    if (!parked || status === 'loading' || status === 'new' || onboarding) return;
+    setAfterUnlock(take());
+  }, [parked, status, onboarding, setAfterUnlock]);
+
+  // Finish what a shake, tile or shortcut started once the vault opens.
   useEffect(() => {
     if (!open || !v.afterUnlock) return;
     const next = v.afterUnlock;
     v.setAfterUnlock(null);
-    setTimeout(() => router.push(next as Href), 0);
-  }, [open, v]);
+    if (next.startsWith('/add') && path === '/add') return;
+    // Search re-targets the vault screen; Add opens on top of whatever is showing.
+    setTimeout(() => (next.startsWith('/add') ? router.push(next as Href) : router.navigate(next as Href)), 0);
+  }, [open, v, path]);
 
   if (!ready) return null;
 

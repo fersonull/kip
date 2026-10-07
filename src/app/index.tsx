@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -39,6 +39,15 @@ export default function VaultScreen() {
   const v = useVault();
   const [q, setQ] = useState('');
   const list = useRef<FlatList<Line>>(null);
+  const searchInput = useRef<TextInput>(null);
+
+  // The "Search" app shortcut lands here with a fresh ?search= value each time.
+  const { search } = useLocalSearchParams<{ search?: string }>();
+  useEffect(() => {
+    if (!search) return;
+    const t = setTimeout(() => searchInput.current?.focus(), 350);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const query = q.trim().toLowerCase();
   const lines = buildLines(v.items, query);
@@ -124,6 +133,7 @@ export default function VaultScreen() {
           <View style={{ flex: 1, height: 56, borderRadius: 28, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, elevation: 6 }}>
             <Icon name="search" size={22} color={C.bg} />
             <TextInput
+              ref={searchInput}
               value={q}
               onChangeText={setQ}
               placeholder="Find a login"

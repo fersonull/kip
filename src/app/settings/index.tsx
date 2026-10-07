@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import type { ReactNode } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,6 +8,8 @@ import { Icon, IconButton, OfflineLine, Segmented, Title } from '@/components/ui
 import { C, F } from '@/constants/tokens';
 import { canUseBio, type Settings } from '@/lib/keys';
 import { useVault } from '@/lib/vault-context';
+
+import Autofill from '../../../modules/kip-autofill';
 
 type IconName = Parameters<typeof Icon>[0]['name'];
 
@@ -37,6 +39,8 @@ export default function SettingsScreen() {
   const toast = useToast();
   const st = v.settings;
   const set = (patch: Partial<Settings>) => v.setSettings(patch);
+  const [autofillOn, setAutofillOn] = useState(Autofill.isEnabled());
+  useFocusEffect(useCallback(() => setAutofillOn(Autofill.isEnabled()), []));
 
   const toggleBio = async (on: boolean) => {
     if (on && !canUseBio()) return toast.flash('Add a fingerprint in Android settings first.', 'info');
@@ -57,10 +61,10 @@ export default function SettingsScreen() {
         <Card
           icon="auto_awesome"
           title="Autofill"
-          sub="Off. Kip can’t fill or catch logins yet."
-          bg={C.sand}
+          sub={autofillOn ? 'On. Kip offers to fill and save.' : 'Off. Kip can’t fill or catch logins yet.'}
+          bg={autofillOn ? C.card : C.sand}
           onPress={() => router.push('/settings/autofill')}
-          right={<Text style={{ fontFamily: F.bold, fontSize: 13, color: C.rust }}>Set up</Text>}
+          right={<Text style={{ fontFamily: F.bold, fontSize: 13, color: autofillOn ? C.okInk : C.rust }}>{autofillOn ? 'On' : 'Set up'}</Text>}
         />
         <Card
           icon="inventory_2"

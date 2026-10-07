@@ -1,0 +1,7 @@
+<resources>
+  <string name="kip_tile_subtitle">Add login</string>
+  <string name="kip_shortcut_add">Add login</string>
+  <string name="kip_shortcut_add_long">Add a login</string>
+  <string name="kip_shortcut_search">Search</string>
+  <string name="kip_shortcut_search_long">Search logins</string>
+</resources>

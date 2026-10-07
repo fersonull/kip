@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 
+import Autofill, { type QueuedLogin } from '../../modules/kip-autofill';
+
 import * as keys from './keys';
 import * as vault from './vault';
 import type { Cred, CredInput, Pending } from './vault';
@@ -58,8 +60,18 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = async () => {
-    setItems(await vault.listCreds());
+    // Logins Android asked Kip to save while it was locked.
+    const caught = await Autofill.drainQueue().catch(() => [] as string[]);
+    for (const json of caught) await vault.addPending(JSON.parse(json) as QueuedLogin);
+
+    const creds = await vault.listCreds();
+    setItems(creds);
     setPending(await vault.listPending());
+
+    // Re-seal what the autofill service may offer. Only logins with a site or app can ever match.
+    // Fails quietly on phones without a screen lock, where Android won't create the key.
+    const fillable = creds.filter((c) => c.url && c.password).map(({ title, username, password, url }) => ({ title, username, password, url }));
+    Autofill.writeFillCache(JSON.stringify(fillable)).catch(() => {});
   };
 
   const open = async (dataKey: string) => {
@@ -85,8 +97,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       if (next !== 'active' || !leftAt) return;
       const gone = Date.now() - leftAt;
       leftAt = 0;
-      if (awayCount.current > 0) return;
-      if (key.current && gone >= settingsRef.current.autoLock * 1000) lock();
+      if (awayCount.current > 0 || !key.current) return;
+      if (gone >= settingsRef.current.autoLock * 1000) lock();
+      else refresh(); // Pick up anything autofill saved meanwhile.
     });
     return () => sub.remove();
   }, []);
@@ -104,6 +117,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     status, onboarding, items, pending, settings, afterUnlock, setAfterUnlock,
     create: async (password) => {
       await vault.discardVaultFile();
+      await Autofill.clearFillCache().catch(() => {});
       setOnboarding(true);
       await open(await keys.createVault(password));
     },

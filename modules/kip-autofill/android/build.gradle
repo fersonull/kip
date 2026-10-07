@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.fersonull.kip'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.kipautofill"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  implementation "androidx.appcompat:appcompat:1.7.0"
+  implementation "androidx.biometric:biometric:1.1.0"
+}

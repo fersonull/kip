@@ -10,7 +10,7 @@ import { C, F } from '@/constants/tokens';
 import type { CredInput } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
 
-type Params = { id?: string; pendingId?: string; source?: 'shake' | 'tile' };
+type Params = { id?: string; pendingId?: string; source?: 'shake' | 'tile' | 'shortcut' };
 
 const BLANK: CredInput = { title: '', username: '', password: '', url: '', notes: '', custom: [] };
 
@@ -45,6 +45,7 @@ export default function Add() {
   const chip: [string, Parameters<typeof Icon>[0]['name']] | null =
     source === 'shake' ? ['You shook, Kip listened', 'vibration']
       : source === 'tile' ? ['From Quick Settings', 'splitscreen_top']
+        : source === 'shortcut' ? ['From the app icon', 'touch_app']
         : pend ? [`Caught from ${pend.source}`, 'download']
           : null;
 

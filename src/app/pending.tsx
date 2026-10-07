@@ -12,7 +12,7 @@ const ago = (t: number) => {
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 };
 
-/** Logins the autofill service caught while Kip was locked. The Kotlin queue fills `pending` (Milestone 4). */
+/** Logins the autofill service caught while Kip was locked (drained from its queue on unlock). */
 export default function PendingScreen() {
   const v = useVault();
   const toast = useToast();

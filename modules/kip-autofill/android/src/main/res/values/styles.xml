@@ -1,0 +1,9 @@
+<resources>
+  <!-- Invisible host for the system biometric prompt. -->
+  <style name="KipAutofillAuth" parent="Theme.AppCompat.Light.NoActionBar">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:windowAnimationStyle">@null</item>
+  </style>
+</resources>

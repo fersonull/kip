@@ -1,0 +1,33 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <service
+      android:name="expo.modules.kipautofill.KipAutofillService"
+      android:exported="true"
+      android:label="Kip"
+      android:permission="android.permission.BIND_AUTOFILL_SERVICE">
+      <intent-filter>
+        <action android:name="android.service.autofill.AutofillService" />
+      </intent-filter>
+      <meta-data
+        android:name="android.autofill"
+        android:resource="@xml/kip_autofill_service" />
+    </service>
+
+    <activity
+      android:name="expo.modules.kipautofill.AutofillAuthActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:theme="@style/KipAutofillAuth" />
+
+    <service
+      android:name="expo.modules.kipautofill.KipTileService"
+      android:exported="true"
+      android:icon="@drawable/kip_tile"
+      android:label="Kip"
+      android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+      <intent-filter>
+        <action android:name="android.service.quicksettings.action.QS_TILE" />
+      </intent-filter>
+    </service>
+  </application>
+</manifest>
