@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useSyncExternalStore } from 'react';
 
+import { DialogProvider } from '@/components/dialog';
 import { ToastProvider } from '@/components/toast';
 import { C } from '@/constants/tokens';
 import { peek, subscribe, take } from '@/lib/deep-link';
@@ -26,8 +27,10 @@ export default function RootLayout() {
   return (
     <VaultProvider>
       <ToastProvider>
-        <StatusBar style="dark" />
-        <Nav fontsReady={fonts} />
+        <DialogProvider>
+          <StatusBar style="dark" />
+          <Nav fontsReady={fonts} />
+        </DialogProvider>
       </ToastProvider>
     </VaultProvider>
   );

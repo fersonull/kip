@@ -56,6 +56,7 @@ const BTN = {
   sand: { bg: C.sand, fg: C.ink },
   ghost: { bg: 'transparent', fg: C.ink },
   off: { bg: C.line, fg: C.disabled },
+  danger: { bg: C.danger, fg: '#FFFFFF' },
 };
 
 export function Button({ title, onPress, kind = 'ink', icon, iconAfter, height = 56, style, disabled }: {

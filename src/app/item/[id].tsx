@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useConfirm } from '@/components/dialog';
 import { useToast } from '@/components/toast';
 import { Button, IconButton, Pebble, Title } from '@/components/ui';
 import { C, F, tintFor } from '@/constants/tokens';
@@ -16,6 +17,7 @@ export default function Detail() {
   const v = useVault();
   const appNames = useAppNames();
   const toast = useToast();
+  const confirm = useConfirm();
   const [shown, setShown] = useState<Record<string, boolean>>({});
   const c = v.items.find((i) => i.id === Number(id));
   if (!c) return null;
@@ -31,19 +33,20 @@ export default function Detail() {
     ...(c.notes ? [{ key: 'n', label: 'Notes', value: c.notes }] : []),
   ];
 
-  const del = () =>
-    Alert.alert(`Delete ${c.title}?`, 'It can’t be brought back unless it’s in a backup.', [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          router.back();
-          await v.remove(c.id);
-          toast.flash('Deleted', 'delete');
-        },
-      },
-    ]);
+  const del = async () => {
+    const ok = await confirm({
+      title: `Delete ${c.title}?`,
+      message: 'It can’t be brought back unless it’s in a backup.',
+      confirm: 'Delete',
+      cancel: 'Keep it',
+      destructive: true,
+      icon: 'delete',
+    });
+    if (!ok) return;
+    router.back();
+    await v.remove(c.id);
+    toast.flash('Deleted', 'delete');
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
