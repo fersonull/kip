@@ -85,7 +85,8 @@ function Nav({ fontsReady }: { fontsReady: boolean }) {
         <Stack.Screen name="item/[id]" />
         <Stack.Screen
           name="add"
-          options={{ presentation: 'transparentModal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'transparent' } }}
+          // The screen animates itself (sheet slides, backdrop fades): see useSheet.
+          options={{ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } }}
         />
         <Stack.Screen name="pending" />
         <Stack.Screen name="settings/index" />

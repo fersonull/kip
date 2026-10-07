@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
+import { FlatList, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon, IconButton, Pebble, Title } from '@/components/ui';
@@ -41,6 +41,18 @@ export default function VaultScreen() {
   const list = useRef<FlatList<Line>>(null);
   const searchInput = useRef<TextInput>(null);
 
+  // The search bar floats (absolute), so KeyboardAvoidingView padding can't move it. Lift it by the
+  // keyboard height instead; RN reports that height already minus the nav bar this screen sits above.
+  const [kb, setKb] = useState(0);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKb(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKb(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
   // The "Search" app shortcut lands here with a fresh ?search= value each time.
   const { search } = useLocalSearchParams<{ search?: string }>();
   useEffect(() => {
@@ -62,7 +74,7 @@ export default function VaultScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <View style={{ paddingTop: 18, paddingHorizontal: 20, paddingBottom: 4, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' }}>
           <Title>Your pocket</Title>
           <IconButton name="settings" label="Settings" color={C.muted} onPress={() => router.push('/settings')} style={{ marginRight: -12 }} />
@@ -102,7 +114,7 @@ export default function VaultScreen() {
               data={lines}
               keyExtractor={(l) => l.key}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 110 }}
+              contentContainerStyle={{ paddingBottom: 110 + kb }}
               getItemLayout={(_, i) => ({ index: i, offset: offsets[i], length: lines[i].kind === 'head' ? HEAD_H : ROW_H })}
               ListEmptyComponent={
                 <Text style={{ padding: 40, textAlign: 'center', fontFamily: F.body, fontSize: 14, color: C.muted }}>
@@ -129,7 +141,7 @@ export default function VaultScreen() {
           </View>
         )}
 
-        <View style={{ position: 'absolute', left: 14, right: 14, bottom: 20, flexDirection: 'row', gap: 10 }}>
+        <View style={{ position: 'absolute', left: 14, right: 14, bottom: 20 + kb, flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1, height: 56, borderRadius: 28, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, elevation: 6 }}>
             <Icon name="search" size={22} color={C.bg} />
             <TextInput
@@ -149,7 +161,7 @@ export default function VaultScreen() {
             </Pebble>
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

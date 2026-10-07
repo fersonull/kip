@@ -14,33 +14,28 @@ export const useToast = () => useContext(Ctx);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [t, setT] = useState<{ msg: string; icon: IconName } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const tick = useRef<ReturnType<typeof setInterval>>(undefined);
-
-  const stop = () => {
-    clearTimeout(timer.current);
-    clearInterval(tick.current);
-  };
-  useEffect(() => stop, []);
+  const clipTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      clearTimeout(clipTimer.current);
+    },
+    [],
+  );
 
   const flash: Toast['flash'] = (msg, icon = 'check', ms = 2200) => {
-    stop();
+    clearTimeout(timer.current);
     setT({ msg, icon });
     timer.current = setTimeout(() => setT(null), ms);
   };
 
   // ponytail: the clear only runs while the JS runtime is alive; a native alarm would survive process death.
   const copied: Toast['copied'] = (label, value, secs) => {
-    stop();
     Clipboard.setStringAsync(value);
-    let left = secs;
-    setT({ msg: `${label} copied. Clears in ${left}s`, icon: 'content_paste' });
-    tick.current = setInterval(() => {
-      left--;
-      if (left > 0) return setT({ msg: `${label} copied. Clears in ${left}s`, icon: 'content_paste' });
-      clearInterval(tick.current);
-      Clipboard.setStringAsync('');
-      flash('Clipboard cleared', 'mop', 1600);
-    }, 1000);
+    flash(`${label} copied. Clears in ${secs}s`, 'content_paste');
+    clearTimeout(clipTimer.current);
+    // Always clears: Android blocks reading the clipboard from the background, so "is it still ours?" can't be checked.
+    clipTimer.current = setTimeout(() => Clipboard.setStringAsync(''), secs * 1000);
   };
 
   return (

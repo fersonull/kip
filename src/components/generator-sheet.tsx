@@ -1,17 +1,22 @@
 import { Slider } from '@expo/ui/community/slider';
 import { getRandomValues } from 'expo-crypto';
 import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, Icon, IconButton } from '@/components/ui';
+import { useSheet } from '@/components/use-sheet';
 import { C, F } from '@/constants/tokens';
 import { generate, type GenOpts } from '@/lib/password';
 
 const make = (len: number, o: GenOpts) => generate(len, o, getRandomValues);
 
-export function GeneratorSheet({ visible, onClose, onUse }: { visible: boolean; onClose: () => void; onUse: (pw: string) => void }) {
+/** Mount it to open. It animates itself out before calling onClose / onUse. */
+export function GeneratorSheet({ onClose, onUse }: { onClose: () => void; onUse: (pw: string) => void }) {
   const insets = useSafeAreaInsets();
+  const sheet = useSheet();
+  const close = () => sheet.close(onClose);
   const [len, setLen] = useState(18);
   const [opts, setOpts] = useState<GenOpts>({ upper: true, num: true, sym: true });
   const [val, setVal] = useState(() => make(18, opts));
@@ -29,9 +34,12 @@ export function GeneratorSheet({ visible, onClose, onUse }: { visible: boolean; 
   ];
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: 'rgba(42,36,32,.35)' }} onPress={onClose} accessibilityLabel="Close generator" />
-      <View style={{ backgroundColor: C.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 20 + insets.bottom, gap: 14 }}>
+    <Modal visible transparent animationType="none" onRequestClose={close} statusBarTranslucent navigationBarTranslucent>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(42,36,32,.35)' }, sheet.backdropStyle]}>
+        <Pressable style={{ flex: 1 }} onPress={close} accessibilityLabel="Close generator" />
+      </Animated.View>
+      <Animated.View style={[{ backgroundColor: C.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: 20 + insets.bottom, gap: 14 }, sheet.sheetStyle]}>
         <Text style={{ fontFamily: F.display, fontSize: 20, color: C.ink }}>Fresh password</Text>
         <View style={{ padding: 16, borderRadius: 18, backgroundColor: C.card, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <Text selectable style={{ flex: 1, fontFamily: F.monoBold, fontSize: 17, lineHeight: 23, color: C.ink }}>{val}</Text>
@@ -68,7 +76,8 @@ export function GeneratorSheet({ visible, onClose, onUse }: { visible: boolean; 
             </Pressable>
           ))}
         </View>
-        <Button title="Use this one" kind="ember" onPress={() => onUse(val)} />
+        <Button title="Use this one" kind="ember" onPress={() => sheet.close(() => onUse(val))} />
+      </Animated.View>
       </View>
     </Modal>
   );

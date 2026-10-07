@@ -1,11 +1,14 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GeneratorSheet } from '@/components/generator-sheet';
 import { useToast } from '@/components/toast';
 import { Button, Field, Icon, IconButton, Title } from '@/components/ui';
+import { useSheet } from '@/components/use-sheet';
 import { C, F } from '@/constants/tokens';
 import type { CredInput } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
@@ -19,6 +22,15 @@ export default function Add() {
   const v = useVault();
   const toast = useToast();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+
+  // Every way out (close, back, save) slides the sheet down first, then leaves.
+  const sheet = useSheet();
+  const [leaving, setLeaving] = useState(false);
+  usePreventRemove(!leaving, ({ data }) => {
+    setLeaving(true);
+    sheet.close(() => navigation.dispatch(data.action));
+  });
 
   const editing = id ? v.items.find((i) => i.id === Number(id)) : undefined;
   const pend = pendingId ? v.pending.find((p) => p.id === Number(pendingId)) : undefined;
@@ -64,7 +76,9 @@ export default function Add() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'rgba(42,36,32,.25)', paddingTop: insets.top + 12 }}>
+    <View style={{ flex: 1, paddingTop: insets.top + 12 }}>
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(42,36,32,.25)' }, sheet.backdropStyle]} />
+      <Animated.View style={[{ flex: 1 }, sheet.sheetStyle]}>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: C.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 }}>
         <View style={{ alignItems: 'center', paddingTop: 8 }}>
           <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: C.handle }} />
@@ -124,10 +138,10 @@ export default function Add() {
           <Button title={busy ? 'Saving…' : 'Save to pocket'} onPress={save} disabled={busy} />
         </View>
       </KeyboardAvoidingView>
+      </Animated.View>
 
       {gen && (
         <GeneratorSheet
-          visible
           onClose={() => setGen(false)}
           onUse={(pw) => {
             setF((x) => ({ ...x, password: pw }));
