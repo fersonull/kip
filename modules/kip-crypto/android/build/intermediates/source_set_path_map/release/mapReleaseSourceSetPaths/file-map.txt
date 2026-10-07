@@ -1,7 +1,0 @@
-expo.modules.kipcrypto.kip-crypto-pngs-0 C:\Kip\modules\kip-crypto\android\build\generated\res\pngs\release
-expo.modules.kipcrypto.kip-crypto-resValues-1 C:\Kip\modules\kip-crypto\android\build\generated\res\resValues\release
-expo.modules.kipcrypto.kip-crypto-mergeReleaseResources-2 C:\Kip\modules\kip-crypto\android\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
-expo.modules.kipcrypto.kip-crypto-mergeReleaseResources-3 C:\Kip\modules\kip-crypto\android\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
-expo.modules.kipcrypto.kip-crypto-release-4 C:\Kip\modules\kip-crypto\android\build\intermediates\merged_res\release\mergeReleaseResources
-expo.modules.kipcrypto.kip-crypto-main-5 C:\Kip\modules\kip-crypto\android\src\main\res
-expo.modules.kipcrypto.kip-crypto-release-6 C:\Kip\modules\kip-crypto\android\src\release\res
