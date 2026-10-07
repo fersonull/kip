@@ -14,6 +14,8 @@ const ITER = 3;
 export type Wrap = { salt: string; key: string };
 
 export const toB64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
+/** expo-crypto's typings allow a base64 string in fromCombined, but Android's native side only takes bytes. */
+const b64ToBytes = (b: string) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0));
 export const b64ToHex = (b: string) =>
   Array.from(atob(b), (c) => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
 
@@ -29,7 +31,7 @@ export async function seal(keyB64: string, plainB64: string) {
 /** Throws if the key is wrong or the data was tampered with (GCM auth). */
 export async function unseal(keyB64: string, sealedB64: string) {
   const key = await AESEncryptionKey.import(keyB64, 'base64');
-  return aesDecryptAsync(AESSealedData.fromCombined(sealedB64), key, { output: 'base64' });
+  return aesDecryptAsync(AESSealedData.fromCombined(b64ToBytes(sealedB64)), key, { output: 'base64' });
 }
 
 /** Wraps a data key with a key derived from the password. */
@@ -42,8 +44,10 @@ export async function wrapKey(password: string, dataKey: string): Promise<Wrap> 
 /** Returns the data key, or null when the password is wrong. */
 export async function unwrapKey(password: string, w: Wrap): Promise<string | null> {
   try {
-    return await aesDecryptAsync(AESSealedData.fromCombined(w.key), await kek(password, w.salt), { output: 'base64' });
-  } catch {
+    return await aesDecryptAsync(AESSealedData.fromCombined(b64ToBytes(w.key)), await kek(password, w.salt), { output: 'base64' });
+  } catch (e) {
+    // A wrong password and a broken step look the same to the user; keep them apart in dev logs.
+    if (__DEV__) console.warn('[kip] unwrapKey failed:', e instanceof Error ? e.message : e);
     return null;
   }
 }
