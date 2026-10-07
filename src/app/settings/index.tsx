@@ -3,6 +3,7 @@ import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { TOPICS } from '@/components/help';
 import { useToast } from '@/components/toast';
 import { Icon, IconButton, OfflineLine, Segmented, Title } from '@/components/ui';
 import { C, F } from '@/constants/tokens';
@@ -88,6 +89,19 @@ export default function SettingsScreen() {
         <Card icon="content_paste_off" title="Clear clipboard after" sub="Copied passwords vanish on their own">
           <Segmented options={[15, 30, 60] as const} value={st.clipSecs} onChange={(clipSecs) => set({ clipSecs })} format={(o) => `${o}s`} />
         </Card>
+
+        <Text style={{ marginTop: 18, marginBottom: 2, paddingHorizontal: 8, fontFamily: F.monoBold, fontSize: 11, letterSpacing: 1, color: C.faint }}>HELP</Text>
+        {TOPICS.map((t) => (
+          <Card
+            key={t.id}
+            icon={t.icon}
+            title={t.title}
+            sub={t.sub}
+            onPress={() => router.push({ pathname: '/settings/help', params: { topic: t.id } })}
+            right={<Icon name="chevron_right" size={22} color={C.faint} />}
+          />
+        ))}
+
         <View style={{ paddingTop: 10, paddingHorizontal: 8, alignItems: 'flex-start' }}>
           <OfflineLine text="Kip has no internet permission. It physically can’t phone home." />
         </View>

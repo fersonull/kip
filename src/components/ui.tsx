@@ -99,7 +99,8 @@ export function Field({ label, error, trailing, mono, ...input }: TextInputProps
           autoCapitalize="none"
           autoCorrect={false}
           {...input}
-          style={[s.input, mono && { fontFamily: F.mono }]}
+          // Mono only for typed text: a mono placeholder is too wide next to trailing buttons.
+          style={[s.input, mono && !!input.value && { fontFamily: F.mono }]}
         />
         {trailing}
       </View>

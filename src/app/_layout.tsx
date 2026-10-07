@@ -92,6 +92,7 @@ function Nav({ fontsReady }: { fontsReady: boolean }) {
         <Stack.Screen name="settings/index" />
         <Stack.Screen name="settings/backup" />
         <Stack.Screen name="settings/autofill" />
+        <Stack.Screen name="settings/help" />
       </Stack.Protected>
     </Stack>
   );
