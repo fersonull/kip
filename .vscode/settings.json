@@ -3,5 +3,14 @@
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
-  }
+  },
+  // Local Expo modules only build inside the generated android/ project, which supplies the
+  // Android and Expo Gradle plugins. Importing them on their own fails, so the Java extension skips them.
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype-resources/**",
+    "**/META-INF/maven/**",
+    "**/modules/*/android/**"
+  ]
 }
