@@ -1,6 +1,6 @@
 // Run: node --experimental-strip-types src/lib/morning.check.ts
 // @ts-ignore -- Node needs the extension; the app bundler doesn't.
-import { nextMorning } from './morning.ts';
+import { nextMorning, reminderDates } from './morning.ts';
 
 const assert = {
   equal(a: unknown, b: unknown, msg: string) {
@@ -16,5 +16,7 @@ assert.equal(when(nextMorning(at(8, 23, 30))), '9 9:00', 'late night: next morni
 assert.equal(when(nextMorning(at(9, 0, 30))), '9 9:00', 'just after midnight: same morning');
 assert.equal(when(nextMorning(at(9, 8, 55))), '10 9:00', 'right before nine: skip to tomorrow');
 assert.equal(when(nextMorning(at(31, 15))), '1 9:00', 'month rolls over');
+
+assert.equal(reminderDates(at(8, 14)).map(when).join(', '), '9 9:00, 12 9:00, 15 9:00, 18 9:00, 21 9:00', 'every 3 days from next morning');
 
 console.log('morning: ok');
