@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,6 +15,10 @@ type Picked = { name: string; size: number; text: string };
 export default function Backup() {
   const v = useVault();
   const toast = useToast();
+  // From the empty vault screen: "restore" opens the file picker right away, "import" scrolls to Google's steps.
+  const { start } = useLocalSearchParams<{ start?: 'restore' | 'import' }>();
+  const scroll = useRef<ScrollView>(null);
+  const scrolled = useRef(false);
   const [bk, setBk] = useState<'idle' | 'working' | 'done'>('idle');
   const [file, setFile] = useState('');
   const [picked, setPicked] = useState<Picked | null>(null);
@@ -68,6 +72,12 @@ export default function Backup() {
     }
   };
 
+  useEffect(() => {
+    if (start === 'restore') v.away(pickFile).then((f) => f && setPicked(f), () => {});
+    // Once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const restore = async () => {
     if (!picked || restoring) return;
     setRestoring(true);
@@ -93,7 +103,7 @@ export default function Backup() {
         <IconButton name="arrow_back" label="Back" onPress={() => router.back()} />
       </View>
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scroll} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 28 }} keyboardShouldPersistTaps="handled">
           <Title>Your spare key</Title>
           <Body style={{ marginTop: 10 }}>
             Kip lives only on this phone. A backup file is the one way to move to a new phone, or get everything back if this one goes missing.
@@ -149,7 +159,13 @@ export default function Backup() {
             )}
           </View>
 
-          <View style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.card, gap: 12 }}>
+          <View
+            onLayout={(e) => {
+              if (start !== 'import' || scrolled.current) return;
+              scrolled.current = true;
+              scroll.current?.scrollTo({ y: e.nativeEvent.layout.y - 12 });
+            }}
+            style={{ marginTop: 12, padding: 16, borderRadius: 22, backgroundColor: C.card, gap: 12 }}>
             <Head icon="move_to_inbox" title="Import from Google" sub="Bring over passwords saved in Google Password Manager" />
             {imported ? (
               <>

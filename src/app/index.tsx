@@ -3,7 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Icon, IconButton, LoginMark, Pebble, Title } from '@/components/ui';
+import { LoginMenu } from '@/components/login-menu';
+import { Button, Icon, IconButton, LoginMark, Pebble, Title } from '@/components/ui';
 import { C, F } from '@/constants/tokens';
 import type { Cred } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
@@ -12,10 +13,18 @@ import Autofill from '../../modules/kip-autofill';
 
 const ROW_H = 58;
 const HEAD_H = 36;
+/** From this many logins, the list groups by first letter and gets the A–Z rail. */
+const GROUP_AT = 10;
 
 type Line = { kind: 'head'; key: string; label: string } | { kind: 'row'; key: string; c: Cred };
 
-/** Favorites on top. Over 40 logins, the rest group by first letter (and get an A–Z rail). */
+/** "Émile" -> "E". Anything that isn't A–Z (digits, symbols, other scripts) files under "#". */
+const letterOf = (title: string) => {
+  const L = title.normalize('NFD')[0]?.toUpperCase() ?? '';
+  return L >= 'A' && L <= 'Z' ? L : '#';
+};
+
+/** Favorites on top. From GROUP_AT logins, the rest group by first letter (and get an A–Z rail). */
 function buildLines(items: Cred[], q: string): Line[] {
   const head = (key: string, label: string): Line => ({ kind: 'head', key: 'h-' + key, label });
   const rows = (list: Cred[]) => list.map((c): Line => ({ kind: 'row', key: 'r-' + c.id, c }));
@@ -27,10 +36,11 @@ function buildLines(items: Cred[], q: string): Line[] {
   const favs = items.filter((c) => c.fav).sort(byTitle);
   const rest = items.filter((c) => !c.fav).sort(byTitle);
   const out: Line[] = favs.length ? [head('fav', '★ FAVORITES'), ...rows(favs)] : [];
-  if (items.length <= 40) return rest.length ? [...out, head('all', 'EVERYTHING ELSE'), ...rows(rest)] : out;
+  if (items.length < GROUP_AT) return rest.length ? [...out, head('all', 'EVERYTHING ELSE'), ...rows(rest)] : out;
+  // "#" first, so each letter's titles stay together under one heading.
+  const keyed = rest.map((c) => ({ c, L: letterOf(c.title) })).sort((a, b) => Number(a.L !== '#') - Number(b.L !== '#') || byTitle(a.c, b.c));
   let letter = '';
-  for (const c of rest) {
-    const L = c.title[0].toUpperCase();
+  for (const { c, L } of keyed) {
     if (L !== letter) out.push(head(L, (letter = L)));
     out.push({ kind: 'row', key: 'r-' + c.id, c });
   }
@@ -41,6 +51,7 @@ export default function VaultScreen() {
   const v = useVault();
   const [q, setQ] = useState('');
   const list = useRef<FlatList<Line>>(null);
+  const [menu, setMenu] = useState<{ c: Cred; row: { y: number; h: number } } | null>(null);
   const searchInput = useRef<TextInput>(null);
 
   // Re-checked on focus: the user may have just switched it on in Android settings.
@@ -71,7 +82,7 @@ export default function VaultScreen() {
   const lines = buildLines(v.items, query);
   const offsets: number[] = [];
   lines.reduce((y, l) => (offsets.push(y), y + (l.kind === 'head' ? HEAD_H : ROW_H)), 0);
-  const rail = !query && v.items.length > 40
+  const rail = !query && v.items.length >= GROUP_AT
     ? lines.flatMap((l, i) => (l.kind === 'head' && l.label.length === 1 ? [{ k: l.label, i }] : []))
     : [];
 
@@ -117,6 +128,11 @@ export default function VaultScreen() {
               <Icon name={autofillOn ? 'check_circle' : 'auto_awesome'} size={20} color={autofillOn ? C.okInk : C.ink} />
               <Text style={{ fontFamily: F.medium, fontSize: 14, color: autofillOn ? C.okInk : C.ink }}>{autofillOn ? 'Autofill is on' : 'Turn on autofill'}</Text>
             </Pressable>
+            <Text style={{ marginTop: 28, fontFamily: F.body, fontSize: 13, color: C.muted }}>Moving in from somewhere?</Text>
+            <View style={{ marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
+              <Button title="Restore a backup" kind="sand" icon="download" height={44} onPress={() => router.push({ pathname: '/settings/backup', params: { start: 'restore' } })} />
+              <Button title="Import from Google" kind="sand" icon="move_to_inbox" height={44} onPress={() => router.push({ pathname: '/settings/backup', params: { start: 'import' } })} />
+            </View>
           </View>
         ) : (
           <View style={{ flex: 1 }}>
@@ -136,21 +152,14 @@ export default function VaultScreen() {
                 l.kind === 'head' ? (
                   <Text style={{ height: HEAD_H, paddingHorizontal: 20, paddingTop: 14, fontFamily: F.monoBold, fontSize: 11, letterSpacing: 0.5, color: C.faint }}>{l.label}</Text>
                 ) : (
-                  <Row c={l.c} />
+                  <Row c={l.c} onMenu={(row) => setMenu({ c: l.c, row })} />
                 )
               }
             />
-            {rail.length > 0 && (
-              <View style={{ position: 'absolute', right: 2, top: 4, bottom: 100, width: 26, alignItems: 'center', justifyContent: 'space-between' }}>
-                {rail.map((r) => (
-                  <Pressable key={r.k} hitSlop={{ left: 8, right: 4 }} onPress={() => list.current?.scrollToIndex({ index: r.i, animated: false })}>
-                    <Text style={{ fontFamily: F.monoBold, fontSize: 9, color: C.faint, paddingHorizontal: 6, paddingVertical: 1 }}>{r.k}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            )}
+            {rail.length > 0 && <Rail marks={rail} onPick={(i) => list.current?.scrollToIndex({ index: i, animated: false })} />}
           </View>
         )}
+        {menu && <LoginMenu c={menu.c} row={menu.row} preview={<RowBody c={menu.c} />} onClose={() => setMenu(null)} />}
 
         <View style={{ position: 'absolute', left: 14, right: 14, bottom: 20 + kb, flexDirection: 'row', gap: 10 }}>
           <View style={{ flex: 1, height: 56, borderRadius: 28, backgroundColor: C.ink, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, elevation: 6 }}>
@@ -177,18 +186,75 @@ export default function VaultScreen() {
   );
 }
 
-function Row({ c }: { c: Cred }) {
+function Row({ c, onMenu }: { c: Cred; onMenu: (row: { y: number; h: number }) => void }) {
+  const ref = useRef<View>(null);
   return (
     <Pressable
+      ref={ref}
       onPress={() => router.push({ pathname: '/item/[id]', params: { id: String(c.id) } })}
+      onLongPress={() => ref.current?.measureInWindow((_x, y, _w, h) => onMenu({ y, h }))}
+      delayLongPress={350}
       android_ripple={{ color: '#F1EAE1' }}
       style={{ height: ROW_H, flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 20, paddingRight: 32 }}>
+      <RowBody c={c} />
+    </Pressable>
+  );
+}
+
+/** A row's contents, shared with the lifted copy the long-press menu draws. */
+function RowBody({ c }: { c: Cred }) {
+  return (
+    <>
       <LoginMark title={c.title} url={c.url} w={40} h={36} fontSize={16} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: F.medium, fontSize: 15, color: C.ink }}>{c.title}</Text>
         {!!c.username && <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{c.username}</Text>}
       </View>
       {c.fav && <Icon name="star" size={18} color={C.ember} fill />}
-    </Pressable>
+    </>
+  );
+}
+
+/** A–Z index: tap a letter, or slide along it and the list follows. A pebble shows the letter under the finger. */
+function Rail({ marks, onPick }: { marks: { k: string; i: number }[]; onPick: (i: number) => void }) {
+  const [room, setRoom] = useState(0);
+  const [at, setAt] = useState<{ k: string; y: number } | null>(null);
+  const cell = Math.min(22, room / marks.length);
+  const pick = (y: number) => {
+    const m = marks[Math.min(marks.length - 1, Math.max(0, Math.floor(y / cell)))];
+    if (m.k !== at?.k) onPick(m.i);
+    setAt({ k: m.k, y: Math.min(cell * marks.length, Math.max(0, y)) });
+  };
+  return (
+    <View
+      pointerEvents="box-none"
+      onLayout={(e) => setRoom(e.nativeEvent.layout.height)}
+      style={{ position: 'absolute', right: 2, top: 4, bottom: 100, width: 26, justifyContent: 'center' }}>
+      {room > 0 && (
+        <View
+          hitSlop={{ left: 12, right: 2 }}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}
+          onResponderTerminationRequest={() => false}
+          onResponderGrant={(e) => pick(e.nativeEvent.locationY)}
+          onResponderMove={(e) => pick(e.nativeEvent.locationY)}
+          onResponderRelease={() => setAt(null)}
+          onResponderTerminate={() => setAt(null)}
+          accessibilityLabel="Jump to letter">
+          {marks.map((r) => (
+            <View key={r.k} pointerEvents="none" style={{ height: cell, alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontFamily: F.monoBold, fontSize: r.k === at?.k ? 11 : 9, color: r.k === at?.k ? C.rust : C.faint }}>{r.k}</Text>
+            </View>
+          ))}
+          {at && (
+            <View pointerEvents="none" style={{ position: 'absolute', right: 40, top: at.y - 26 }}>
+              <Pebble w={60} h={52}>
+                <Text style={{ fontFamily: F.displayBold, fontSize: 26, color: C.ink }}>{at.k}</Text>
+              </Pebble>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
