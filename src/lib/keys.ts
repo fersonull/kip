@@ -97,9 +97,11 @@ export type Settings = {
   clipSecs: 15 | 30 | 60;
   bio: boolean;
   lastBackup: string | null;
+  /** Morning notification when logins changed since the last backup. */
+  backupReminder: boolean;
 };
 
-const DEFAULTS: Settings = { autoLock: 60, shake: 'Gentle', shakeClosed: false, clipSecs: 30, bio: false, lastBackup: null };
+const DEFAULTS: Settings = { autoLock: 60, shake: 'Gentle', shakeClosed: false, clipSecs: 30, bio: false, lastBackup: null, backupReminder: false };
 
 export async function loadSettings(): Promise<Settings> {
   const raw = await SecureStore.getItemAsync(SETTINGS);

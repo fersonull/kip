@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import Autofill, { type QueuedLogin } from '../../modules/kip-autofill';
 
+import { cancelBackupReminder, remindBackup } from './backup-reminder';
 import * as keys from './keys';
 import * as vault from './vault';
 import type { Cred, CredInput, ImportCred, Pending } from './vault';
@@ -40,6 +41,11 @@ export const useVault = () => useContext(Ctx);
 
 /** Closed-app shake runs natively; keep its level in step with settings. */
 const syncShake = (s: keys.Settings) => Autofill.setBackgroundShake(s.shakeClosed && s.shake !== 'Off' ? s.shake : null);
+
+/** Logins changed: nudge for a backup tomorrow morning. A failed schedule never blocks the save. */
+const changed = (s: keys.Settings) => {
+  if (s.backupReminder) remindBackup().catch(() => {});
+};
 
 const sameCred =(a: CredInput, b: CredInput) => a.title === b.title && a.username === b.username && a.password === b.password;
 
@@ -123,6 +129,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     setSettingsState(next);
     await keys.saveSettings(next);
     if ('shake' in patch || 'shakeClosed' in patch) syncShake(next);
+    // A fresh backup (or turning reminders off) means there's nothing to nag about.
+    if (patch.lastBackup || patch.backupReminder === false) cancelBackupReminder().catch(() => {});
   };
 
   const v: Vault = {
@@ -152,14 +160,17 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     lock,
     save: async (c, id) => {
       await vault.saveCred(c, id);
+      changed(settingsRef.current);
       await refresh();
     },
     remove: async (id) => {
       await vault.deleteCred(id);
+      changed(settingsRef.current);
       await refresh();
     },
     toggleFav: async (id) => {
       await vault.setFav(id, !items.find((i) => i.id === id)?.fav);
+      changed(settingsRef.current);
       await refresh();
     },
     dropPending: async (id) => {
@@ -179,6 +190,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         have.push(c);
         n++;
       }
+      if (n) changed(settingsRef.current);
       await refresh();
       return n;
     },

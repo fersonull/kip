@@ -52,6 +52,13 @@
         }
       ],
       "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/android-icon-monochrome.png",
+          "color": "#A44E24"
+        }
+      ],
       "./plugins/with-release-no-internet",
       "./plugins/with-kip-shortcuts"
     ],

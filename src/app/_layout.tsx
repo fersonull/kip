@@ -4,13 +4,15 @@ import { JetBrainsMono_400Regular, JetBrainsMono_600SemiBold } from '@expo-googl
 import { useFonts } from 'expo-font';
 import { router, Stack, usePathname, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useSyncExternalStore } from 'react';
 
 import { DialogProvider } from '@/components/dialog';
 import { ToastProvider } from '@/components/toast';
 import { C } from '@/constants/tokens';
-import { peek, subscribe, take } from '@/lib/deep-link';
+import { BACKUP_ROUTE, isBackupReminder } from '@/lib/backup-reminder';
+import { park, peek, subscribe, take } from '@/lib/deep-link';
 import { useShake } from '@/lib/use-shake';
 import { useVault, VaultProvider } from '@/lib/vault-context';
 
@@ -58,6 +60,18 @@ function Nav({ fontsReady }: { fontsReady: boolean }) {
     if (!parked || status === 'loading' || status === 'new' || onboarding) return;
     setAfterUnlock(take());
   }, [parked, status, onboarding, setAfterUnlock]);
+
+  // A tapped backup reminder waits for the unlock like a tile does. Cleared so a later relaunch doesn't replay it.
+  useEffect(() => {
+    const open = (r: Notifications.NotificationResponse | null) => {
+      if (!isBackupReminder(r)) return;
+      Notifications.clearLastNotificationResponse();
+      park(BACKUP_ROUTE);
+    };
+    open(Notifications.getLastNotificationResponse());
+    const sub = Notifications.addNotificationResponseReceivedListener(open);
+    return () => sub.remove();
+  }, []);
 
   // Finish what a shake, tile or shortcut started once the vault opens.
   useEffect(() => {

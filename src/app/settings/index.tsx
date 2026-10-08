@@ -9,6 +9,7 @@ import { TOPICS } from '@/components/help';
 import { useToast } from '@/components/toast';
 import { Icon, IconButton, OfflineLine, Segmented, Title } from '@/components/ui';
 import { C, F } from '@/constants/tokens';
+import { remindBackup } from '@/lib/backup-reminder';
 import { canUseBio, type Settings } from '@/lib/keys';
 import { useVault } from '@/lib/vault-context';
 
@@ -58,13 +59,24 @@ export default function SettingsScreen() {
     }
   };
 
-  // Closed-app shake needs notifications on Android 13+: the service's own, and the "Add a login" one.
+  /** Android 13+ asks before any notification shows. */
+  const allowNotes = async () => {
+    if (Platform.OS !== 'android' || Platform.Version < 33) return true;
+    const r = await v.away(() => PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS));
+    return r === PermissionsAndroid.RESULTS.GRANTED;
+  };
+
+  // Closed-app shake needs notifications: the service's own, and the "Add a login" one.
   const toggleShakeClosed = async (on: boolean) => {
-    if (on && Platform.OS === 'android' && Platform.Version >= 33) {
-      const r = await v.away(() => PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS));
-      if (r !== PermissionsAndroid.RESULTS.GRANTED) return toast.flash('Kip needs notifications to listen while closed.', 'info');
-    }
+    if (on && !(await allowNotes())) return toast.flash('Kip needs notifications to listen while closed.', 'info');
     await set({ shakeClosed: on });
+  };
+
+  const toggleReminder = async (on: boolean) => {
+    if (on && !(await allowNotes())) return toast.flash('Kip needs notifications to remind you.', 'info');
+    await set({ backupReminder: on });
+    // Never backed up: there's already something to remind about.
+    if (on && !st.lastBackup && v.items.length) remindBackup().catch(() => {});
   };
 
   const allowOverApps = async () => {
@@ -101,6 +113,12 @@ export default function SettingsScreen() {
           sub={st.lastBackup ? `Last backup: ${st.lastBackup}` : 'No backup yet. Worth doing today.'}
           onPress={() => router.push('/settings/backup')}
           right={<Icon name="chevron_right" size={22} color={C.faint} />}
+        />
+        <Card
+          icon="notifications"
+          title="Backup reminder"
+          sub="A morning nudge after you change logins"
+          right={<Switch value={st.backupReminder} onValueChange={toggleReminder} trackColor={{ true: C.ember, false: C.handle }} thumbColor="#FFFFFF" />}
         />
         <Card
           icon="fingerprint"
