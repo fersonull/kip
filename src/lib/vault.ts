@@ -16,6 +16,8 @@ export type Cred = {
   updatedAt: number;
 };
 export type CredInput = Pick<Cred, 'title' | 'username' | 'password' | 'url' | 'notes' | 'custom'>;
+/** A login coming in from a file. Kip backups carry fav; CSV imports don't. */
+export type ImportCred = CredInput & { fav?: boolean };
 /** url: the site or app package the login came from (what fill matches on). source: how to describe it. */
 export type Pending = { id: number; title: string; username: string; password: string; url: string; source: string; createdAt: number };
 
@@ -84,7 +86,7 @@ export async function listPending(): Promise<Pending[]> {
   return rows.map(({ created_at, ...p }) => ({ ...p, createdAt: created_at }));
 }
 
-export async function saveCred(c: CredInput, id?: number) {
+export async function saveCred(c: ImportCred, id?: number) {
   const now = Date.now();
   const args = [c.title, c.username, c.password, c.url, c.notes, JSON.stringify(c.custom), now];
   if (id) {
@@ -93,8 +95,8 @@ export async function saveCred(c: CredInput, id?: number) {
       ...args, id);
   } else {
     await d().runAsync(
-      'INSERT INTO credentials (title, username, password, url, notes, custom_fields, updated_at, created_at) VALUES (?,?,?,?,?,?,?,?)',
-      ...args, now);
+      'INSERT INTO credentials (title, username, password, url, notes, custom_fields, updated_at, created_at, fav) VALUES (?,?,?,?,?,?,?,?,?)',
+      ...args, now, c.fav ? 1 : 0);
   }
 }
 

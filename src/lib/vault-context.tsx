@@ -5,7 +5,7 @@ import Autofill, { type QueuedLogin } from '../../modules/kip-autofill';
 
 import * as keys from './keys';
 import * as vault from './vault';
-import type { Cred, CredInput, Pending } from './vault';
+import type { Cred, CredInput, ImportCred, Pending } from './vault';
 
 type Status = 'loading' | 'new' | 'locked' | 'unlocked';
 
@@ -28,8 +28,8 @@ type Vault = {
   toggleFav: (id: number) => Promise<void>;
   dropPending: (id: number) => Promise<void>;
   setSettings: (patch: Partial<keys.Settings>) => Promise<void>;
-  /** Merges logins, skipping exact duplicates. Returns how many were added. */
-  importItems: (list: CredInput[]) => Promise<number>;
+  /** Merges logins, skipping exact duplicates (a backup's favorite still stars its duplicate). Returns how many were added. */
+  importItems: (list: ImportCred[]) => Promise<number>;
   dataKey: () => string;
   /** Run something that leaves the app (share sheet, file picker, system settings) without tripping auto-lock. */
   away: <T>(fn: () => Promise<T>) => Promise<T>;
@@ -171,6 +171,9 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       const have: CredInput[] = [...items];
       let n = 0;
       for (const c of list) {
+        const old = items.find((h) => sameCred(h, c));
+        // Re-restoring a backup brings back favorites even for logins already here.
+        if (old && c.fav && !old.fav) await vault.setFav(old.id, true);
         if (have.some((h) => sameCred(h, c))) continue;
         await vault.saveCred({ ...c, username: c.username ?? '', password: c.password ?? '', url: c.url ?? '', notes: c.notes ?? '', custom: c.custom ?? [] });
         have.push(c);
