@@ -6,6 +6,8 @@ type KipAutofill = {
   clearFillCache(): Promise<void>;
   drainQueue(): Promise<string[]>;
   listApps(): Promise<{ label: string; pkg: string }[]>;
+  /** Cached PNG of an installed app's icon. full: unmasked adaptive icon, clip it yourself. */
+  appIcon(pkg: string): Promise<{ uri: string; full: boolean } | null>;
   /** Closed-app shake service: a level turns it on, null turns it off. */
   setBackgroundShake(level: 'Gentle' | 'Firm' | null): void;
   canOpenOverApps(): boolean;

@@ -1,9 +1,11 @@
 import { MaterialSymbols_400Regular_Filled } from '@expo-google-fonts/material-symbols/400Regular_Filled';
+import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 
-import { C, F } from '@/constants/tokens';
+import { C, F, tintFor } from '@/constants/tokens';
+import { useLoginIcon } from '@/lib/apps';
 
 type AndroidName = Extract<ComponentProps<typeof SymbolView>['name'], { android?: unknown }>['android'];
 const FILLED = { name: 'MaterialSymbols_400Regular_Filled', font: MaterialSymbols_400Regular_Filled };
@@ -37,6 +39,27 @@ export function Pebble({ w, h, color = C.ember, style, children }: { w: number; 
       ]}>
       {children}
     </View>
+  );
+}
+
+/** A login's pebble: its app's icon (or the icon of the app its website matches), else the title's first letter. */
+export function LoginMark({ title, url, w, h, fontSize, font = F.displayBold }: { title: string; url: string; w: number; h: number; fontSize: number; font?: string }) {
+  const icon = useLoginIcon(url);
+  if (icon?.full) {
+    return (
+      <Pebble w={w} h={h} color={C.sand} style={{ overflow: 'hidden' }}>
+        <Image source={icon.uri} style={StyleSheet.absoluteFill} contentFit="cover" />
+      </Pebble>
+    );
+  }
+  return (
+    <Pebble w={w} h={h} color={icon ? C.sand : tintFor(title)}>
+      {icon ? (
+        <Image source={icon.uri} style={{ width: h * 0.72, height: h * 0.72 }} contentFit="contain" />
+      ) : (
+        <Text style={{ fontFamily: font, fontSize, color: C.ink }}>{title[0]?.toUpperCase()}</Text>
+      )}
+    </Pebble>
   );
 }
 

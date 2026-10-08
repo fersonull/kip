@@ -3,8 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Keyboard, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Icon, IconButton, Pebble, Title } from '@/components/ui';
-import { C, F, tintFor } from '@/constants/tokens';
+import { Icon, IconButton, LoginMark, Pebble, Title } from '@/components/ui';
+import { C, F } from '@/constants/tokens';
 import type { Cred } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
 
@@ -183,9 +183,7 @@ function Row({ c }: { c: Cred }) {
       onPress={() => router.push({ pathname: '/item/[id]', params: { id: String(c.id) } })}
       android_ripple={{ color: '#F1EAE1' }}
       style={{ height: ROW_H, flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 20, paddingRight: 32 }}>
-      <Pebble w={40} h={36} color={tintFor(c.title)}>
-        <Text style={{ fontFamily: F.displayBold, fontSize: 16, color: C.ink }}>{c.title[0].toUpperCase()}</Text>
-      </Pebble>
+      <LoginMark title={c.title} url={c.url} w={40} h={36} fontSize={16} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: F.medium, fontSize: 15, color: C.ink }}>{c.title}</Text>
         {!!c.username && <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{c.username}</Text>}

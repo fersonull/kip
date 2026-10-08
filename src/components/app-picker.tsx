@@ -3,9 +3,9 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Field, Pebble } from '@/components/ui';
+import { Field, LoginMark } from '@/components/ui';
 import { useSheet } from '@/components/use-sheet';
-import { C, F, tintFor } from '@/constants/tokens';
+import { C, F } from '@/constants/tokens';
 import { getApps, type App } from '@/lib/apps';
 
 /** Mount it to open. Picks an installed app so autofill can match the login to it. */
@@ -53,9 +53,7 @@ export function AppPicker({ onClose, onPick }: { onClose: () => void; onPick: (a
                 onPress={() => sheet.close(() => onPick(a))}
                 android_ripple={{ color: '#F1EAE1' }}
                 style={{ minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 6 }}>
-                <Pebble w={40} h={36} color={tintFor(a.label)}>
-                  <Text style={{ fontFamily: F.displayBold, fontSize: 16, color: C.ink }}>{a.label[0]?.toUpperCase()}</Text>
-                </Pebble>
+                <LoginMark title={a.label} url={a.pkg} w={40} h={36} fontSize={16} />
                 <View style={{ flex: 1, minWidth: 0 }}>
                   <Text numberOfLines={1} style={{ fontFamily: F.medium, fontSize: 15, color: C.ink }}>{a.label}</Text>
                   <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 12, color: C.faint }}>{a.pkg}</Text>

@@ -5,8 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useConfirm } from '@/components/dialog';
 import { useToast } from '@/components/toast';
-import { Button, IconButton, Pebble, Title } from '@/components/ui';
-import { C, F, tintFor } from '@/constants/tokens';
+import { Button, IconButton, LoginMark, Title } from '@/components/ui';
+import { C, F } from '@/constants/tokens';
 import { useAppNames } from '@/lib/apps';
 import { useVault } from '@/lib/vault-context';
 
@@ -57,9 +57,7 @@ export default function Detail() {
         <IconButton name="star" label={c.fav ? 'Remove from favorites' : 'Add to favorites'} color={C.ember} fill={c.fav} onPress={() => v.toggleFav(c.id)} />
       </View>
       <View style={{ paddingHorizontal: 24, paddingTop: 4, paddingBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        <Pebble w={60} h={52} color={tintFor(c.title)}>
-          <Text style={{ fontFamily: F.display, fontSize: 22, color: C.ink }}>{c.title[0].toUpperCase()}</Text>
-        </Pebble>
+        <LoginMark title={c.title} url={c.url} w={60} h={52} fontSize={22} font={F.display} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Title size={26}>{c.title}</Title>
           {!!c.url && <Text style={{ fontFamily: F.body, fontSize: 13, color: C.muted }}>{appName ? `${appName} app` : c.url}</Text>}

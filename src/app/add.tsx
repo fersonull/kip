@@ -8,9 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppPicker } from '@/components/app-picker';
 import { GeneratorSheet } from '@/components/generator-sheet';
 import { useToast } from '@/components/toast';
-import { Button, Field, Icon, IconButton, Pebble, s, Title } from '@/components/ui';
+import { Button, Field, Icon, IconButton, LoginMark, s, Title } from '@/components/ui';
 import { useSheet } from '@/components/use-sheet';
-import { C, F, tintFor } from '@/constants/tokens';
+import { C, F } from '@/constants/tokens';
 import { useAppNames } from '@/lib/apps';
 import type { CredInput } from '@/lib/vault';
 import { useVault } from '@/lib/vault-context';
@@ -124,9 +124,7 @@ export default function Add() {
             <View>
               <Text style={s.label}>Website or app</Text>
               <View style={[s.field, { borderColor: C.line, gap: 12 }]}>
-                <Pebble w={32} h={28} color={tintFor(appName)}>
-                  <Text style={{ fontFamily: F.displayBold, fontSize: 13, color: C.ink }}>{appName[0]?.toUpperCase()}</Text>
-                </Pebble>
+                <LoginMark title={appName} url={f.url} w={32} h={28} fontSize={13} />
                 <View style={{ flex: 1, minWidth: 0, paddingVertical: 8 }}>
                   <Text numberOfLines={1} style={{ fontFamily: F.medium, fontSize: 16, color: C.ink }}>{appName}</Text>
                   <Text numberOfLines={1} style={{ fontFamily: F.body, fontSize: 12, color: C.faint }}>Android app</Text>
