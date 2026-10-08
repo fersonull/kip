@@ -1,56 +1,88 @@
-# Welcome to your Expo app 👋
+<p align="center">
+  <img src="docs/banner.jpg" alt="Kip: your passwords, kept close. Offline. Nothing leaves this phone." width="100%" />
+</p>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Kip
 
-## Get started
+Kip is an offline password manager for Android. Your logins live in an encrypted database on your phone and nowhere else. There's no account, no cloud, and no sync. Release builds don't even have internet permission, so Android itself keeps Kip offline.
 
-1. Install dependencies
+## What it does
 
-   ```bash
-   npm install
-   ```
+**Keep your logins**
+- Each login holds a name, username, password, site or app, notes, and custom fields. Favorites stay at the top.
+- Search everything from the vault screen.
+- A password generator lets you choose length, uppercase, numbers and symbols, and shows a strength meter.
+- Copied passwords clear themselves from the clipboard after 15, 30 or 60 seconds.
 
-2. Start the app
+**Fill and save in other apps**
+- Kip is an Android **autofill service**. It offers your login right in the login field of apps and browsers, and you unlock it with your fingerprint first.
+- When you sign in somewhere new, Android asks **"Save to Kip?"**. This works even while Kip is locked: the login waits in a sealed queue for you to review on your next unlock.
+- You can link a login to an installed app so it fills there too.
 
-   ```bash
-   npx expo start
-   ```
+**Add logins fast**
+- **Shake** your phone to open Add. The sensitivity is Gentle or Firm.
+- **Shake while Kip is closed** (opt-in). It listens only while the phone is unlocked, and a small notification shows while it's on.
+- A **Quick Settings tile** and **app icon shortcuts** (Add login, Search) work without opening Kip first.
 
-In the output, you'll find options to open the app in a
+**Back up and move phones**
+- An encrypted backup file (`.kip`) that only your master password opens. Save it wherever you like and restore it on a new phone.
+- Import from a **Google Password Manager CSV**. Logins already in Kip are skipped, so importing twice is safe.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Security
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+| | |
+| --- | --- |
+| Vault | SQLite with SQLCipher, keyed by a random 256-bit data key |
+| Master password | Argon2id (64 MiB, 3 passes) wraps the data key. **It can't be reset or recovered.** |
+| Fingerprint unlock | A copy of the data key behind an Android Keystore key that needs biometrics to use |
+| Auto-lock | Locks when you leave the app, right away or after 1 or 5 minutes |
+| Backups | The data key wrapped by your master password, plus every login sealed with AES-256-GCM |
+| Autofill data | Sealed with Keystore RSA keys; the fill copy needs a fingerprint or screen lock for every use |
+| Screen | `FLAG_SECURE`: no screenshots, and blank in recents |
+| Network | No `INTERNET` permission in release builds |
 
-## Get a fresh project
+## Build and run
 
-When you're ready, run:
+Kip uses native Android code (autofill service, Quick Settings tile, Argon2id, the shake service), so it needs a **development build**. Expo Go won't work.
 
 ```bash
-npm run reset-project
+npm install
+npx expo run:android     # build, install and start on a connected phone or emulator
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+After the first build, `npx expo start` is enough for JavaScript-only changes.
 
-### Other setup steps
+Cloud builds go through EAS: `npx eas-cli@latest build --profile development|preview|production`.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Before committing, run:
 
-## Learn more
+```bash
+npx expo lint
+npx tsc --noEmit
+node --experimental-strip-types src/lib/password.check.ts
+node --experimental-strip-types src/lib/import-csv.check.ts
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Project layout
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+src/app/              Screens (Expo Router): vault, add/edit, unlock, setup, settings
+src/components/       Shared UI, dialogs, toasts, help topics
+src/lib/              Vault, keys and crypto, backup, CSV import, shake, deep links
+modules/kip-autofill/ Kotlin: autofill service, Quick Settings tile, shake service
+modules/kip-crypto/   Kotlin: Argon2id
+plugins/              Config plugins: icon shortcuts, no-internet release manifest
+promo/                Remotion promo video (this README's banner is a frame from it)
+```
 
-## Join the community
+`android/` is generated by `expo prebuild`. Don't edit it by hand; change `app.json`, the config plugins, or the modules instead.
 
-Join our community of developers creating universal apps.
+## Limits
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- **Android only.** iOS would need a credential provider extension, and iOS doesn't allow listening for shakes while an app is closed.
+- **Nothing syncs.** Backups are your spare key, so make one before you change phones.
+- **Some apps block autofill.** Manual add is always there.
+
+## License
+
+[MIT](LICENSE)

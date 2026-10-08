@@ -11,6 +11,7 @@
     "**/.metadata/**",
     "**/archetype-resources/**",
     "**/META-INF/maven/**",
-    "**/modules/*/android/**"
+    "**/modules/*/android/**",
+    "**/android/**"
   ]
 }
