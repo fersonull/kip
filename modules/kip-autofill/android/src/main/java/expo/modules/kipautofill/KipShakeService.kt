@@ -63,8 +63,12 @@ class KipShakeService : Service(), SensorEventListener {
   private val notes by lazy { getSystemService(NotificationManager::class.java) }
   // Same thresholds as src/lib/use-shake.ts, in g.
   private var g = 1.8f
-  private var last = 0L
   private var listening = false
+  // Shake detection mirrors src/lib/shake.ts (tuning knobs and their reasons live there): 3 separate
+  // peaks within 1 s, readings < 100 ms apart are one peak, 1.5 s cooldown, sampled every 20 ms.
+  private var above = false
+  private val peaks = ArrayDeque<Long>()
+  private var last = Long.MIN_VALUE / 2
 
   private val screen = object : BroadcastReceiver() {
     override fun onReceive(c: Context, i: Intent) = listen(i.action == Intent.ACTION_USER_PRESENT)
@@ -80,7 +84,9 @@ class KipShakeService : Service(), SensorEventListener {
       addAction(Intent.ACTION_SCREEN_OFF)
       addAction(Intent.ACTION_USER_PRESENT)
     }
-    ContextCompat.registerReceiver(this, screen, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+    // Exported: some phones (ColorOS) send USER_PRESENT from SystemUI, not the system uid, and a
+    // not-exported receiver silently drops it. Both are protected broadcasts, so no app can fake them.
+    ContextCompat.registerReceiver(this, screen, filter, ContextCompat.RECEIVER_EXPORTED)
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -104,9 +110,7 @@ class KipShakeService : Service(), SensorEventListener {
       startForeground(ONGOING, n)
     }
 
-    val unlocked = getSystemService(PowerManager::class.java).isInteractive &&
-      !getSystemService(KeyguardManager::class.java).isKeyguardLocked
-    listen(unlocked)
+    listen(unlocked())
     return START_STICKY
   }
 
@@ -116,18 +120,36 @@ class KipShakeService : Service(), SensorEventListener {
     super.onDestroy()
   }
 
+  private fun unlocked() = getSystemService(PowerManager::class.java).isInteractive &&
+    !getSystemService(KeyguardManager::class.java).isKeyguardLocked
+
   private fun listen(on: Boolean) {
     if (on == listening) return
     listening = on
-    if (on) sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sensors.registerListener(this, it, 100_000) }
+    above = false
+    peaks.clear()
+    if (on) sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let { sensors.registerListener(this, it, 20_000) }
     else sensors.unregisterListener(this)
   }
 
   override fun onSensorChanged(e: SensorEvent) {
+    // Some phones (ColorOS) freeze Kip's process despite the foreground service, then deliver the
+    // readings in a burst on thaw. Old readings are a shake that already happened: never act on them.
+    if (SystemClock.elapsedRealtimeNanos() - e.timestamp > 300_000_000) return
     val (x, y, z) = e.values
-    if (appVisible || sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH < g) return
+    val over = sqrt(x * x + y * y + z * z) / SensorManager.GRAVITY_EARTH >= g
+    val rising = over && !above
+    above = over
+    if (!rising || appVisible) return
     val now = SystemClock.elapsedRealtime()
     if (now - last < 1500) return
+    while (peaks.isNotEmpty() && now - peaks.first() >= 1000) peaks.removeFirst()
+    if (peaks.isNotEmpty() && now - peaks.last() < 100) return
+    peaks.addLast(now)
+    if (peaks.size < 3) return
+    peaks.clear()
+    // SCREEN_OFF can land a second or more after the power button: don't open Add behind the lock screen.
+    if (!unlocked()) return listen(false)
     last = now
     if (Settings.canDrawOverlays(this)) startActivity(addLink()) else notifyShook()
   }

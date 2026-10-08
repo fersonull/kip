@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
+import { AppState, KeyboardAvoidingView, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Body, Button, Field, Icon, OfflineLine, Pebble, Title } from '@/components/ui';
@@ -21,7 +21,15 @@ export default function Unlock() {
   const bio = () => v.unlockBio();
 
   useEffect(() => {
-    if (v.settings.bio) bio();
+    if (!v.settings.bio) return;
+    // Prompt once Kip is actually in front (a shake can open it while the phone is still unlocking).
+    if (AppState.currentState === 'active') return void bio();
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') return;
+      sub.remove();
+      bio();
+    });
+    return () => sub.remove();
     // Prompt once on arrival; the pebble retries.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -1,5 +1,6 @@
 import { aesDecryptAsync, aesEncryptAsync, AESEncryptionKey, AESSealedData, getRandomBytes } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
+import { AppState } from 'react-native';
 
 import KipCrypto from '../../modules/kip-crypto';
 
@@ -77,6 +78,10 @@ export async function enableBio(dataKey: string) {
 export const disableBio = () => SecureStore.deleteItemAsync(BIO);
 
 export async function unlockWithBio(): Promise<string | null> {
+  // A fingerprint prompt asked for while Kip isn't in front (say, opened by a shake mid-unlock) is
+  // silently dropped by Android, and expo-secure-store then refuses every later prompt as "already in
+  // progress" until the process dies, which the shake service can keep from happening.
+  if (AppState.currentState !== 'active') return null;
   try {
     return await SecureStore.getItemAsync(BIO, { requireAuthentication: true, authenticationPrompt: 'Unlock Kip' });
   } catch {
